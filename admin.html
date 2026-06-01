@@ -7,7 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <style>
     :root {
       --green: #0b4a28;
@@ -321,8 +320,8 @@
               <label class="form-label">Message</label>
               <textarea class="form-textarea" id="email-body" style="min-height:180px" placeholder="Write your message here..."></textarea>
             </div>
-            <button class="btn-primary" onclick="sendEmail()" style="width:100%;text-align:center" id="send-email-btn">Send Email</button>
-            <p style="font-size:0.7rem;color:#aaa;margin-top:0.75rem;text-align:center">Emails sent via EmailJS — configure your keys in the script section below.</p>
+            <button class="btn-primary" onclick="sendEmail()" style="width:100%;text-align:center" id="send-email-btn">Open in Gmail</button>
+            <p style="font-size:0.7rem;color:#aaa;margin-top:0.75rem;text-align:center">Opens Gmail pre-filled with your message — review and send from info@thompsonlawnsnow.ca.</p>
           </div>
         </div>
       </div>
@@ -497,11 +496,6 @@
 <script>
   // ─── CONFIG ───────────────────────────────────────────────────────
   const ADMIN_PASSWORD = 'thompson2024'; // Change this!
-
-  // EmailJS — fill in after setting up at emailjs.com
-  const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';
-  const EMAILJS_SERVICE_ID  = 'YOUR_EMAILJS_SERVICE_ID';
-  const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';
 
   // ─── AUTH ─────────────────────────────────────────────────────────
   function doLogin() {
@@ -867,25 +861,12 @@
     const subject = document.getElementById('email-subject').value;
     const body = document.getElementById('email-body').value;
     if (!to || !subject || !body) { showToast('Please fill in all fields.'); return; }
-
-    if (EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
-      showToast('EmailJS not configured yet — see script config.');
-      return;
-    }
-
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-    const btn = document.getElementById('send-email-btn');
-    btn.textContent = 'Sending...';
-    btn.disabled = true;
-
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: to, subject, message: body, from_name: 'Thompson Lawn & Snow', reply_to: 'info@thompsonlawnsnow.ca' })
-      .then(() => {
-        showToast('Email sent successfully!');
-        document.getElementById('email-subject').value = '';
-        document.getElementById('email-body').value = '';
-      })
-      .catch(err => { showToast('Failed to send. Check EmailJS config.'); console.error(err); })
-      .finally(() => { btn.textContent = 'Send Email'; btn.disabled = false; });
+    const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+      '&to=' + encodeURIComponent(to) +
+      '&su=' + encodeURIComponent(subject) +
+      '&body=' + encodeURIComponent(body);
+    window.open(gmailUrl, '_blank');
+    showToast('Opening Gmail — review and send from info@thompsonlawnsnow.ca');
   }
 
   // ─── MODALS ───────────────────────────────────────────────────────
