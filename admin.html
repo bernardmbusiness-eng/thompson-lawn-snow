@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin — Thompson Lawn & Snow</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <style>
     :root {
       --green: #0b4a28;
@@ -13,21 +16,15 @@
       --gold: #c9a84c;
       --gold-light: #dbbe7a;
       --gold-muted: #a8894a;
-      --white: #ffffff;
       --off-white: #f5f0e8;
       --text-light: #e8dfc8;
+      --sidebar-w: 220px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Montserrat', sans-serif; background: var(--off-white); color: #222; }
 
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: var(--off-white);
-      color: #222;
-      min-height: 100vh;
-    }
-
-    /* ─── LOGIN SCREEN ─── */
+    /* ─── LOGIN ─── */
     #login-screen {
       min-height: 100vh;
       background: var(--green-dark);
@@ -35,7 +32,6 @@
       align-items: center;
       justify-content: center;
     }
-
     .login-box {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(201,168,76,0.25);
@@ -44,554 +40,870 @@
       max-width: 380px;
       text-align: center;
     }
-
-    .login-logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.8rem;
-      color: var(--gold);
-      letter-spacing: 4px;
-      text-transform: uppercase;
-    }
-
-    .login-sub {
-      font-size: 0.6rem;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: var(--gold-muted);
-      font-weight: 300;
-      margin-bottom: 2rem;
-    }
-
-    .login-label {
-      font-size: 0.65rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--text-light);
-      font-weight: 600;
-      display: block;
-      text-align: left;
-      margin-bottom: 0.4rem;
-    }
-
-    .login-input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid rgba(201,168,76,0.3);
-      background: rgba(255,255,255,0.06);
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.88rem;
-      color: var(--white);
-      outline: none;
-      margin-bottom: 1.2rem;
-      transition: border-color 0.2s;
-    }
-
-    .login-input:focus {
-      border-color: var(--gold);
-    }
-
-    .login-btn {
-      width: 100%;
-      background: var(--gold);
-      color: var(--green-dark);
-      padding: 13px;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
+    .login-logo { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; }
+    .login-sub { font-size: 0.6rem; letter-spacing: 4px; text-transform: uppercase; color: var(--gold-muted); font-weight: 300; margin-bottom: 2rem; }
+    .login-label { font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); font-weight: 600; display: block; text-align: left; margin-bottom: 0.4rem; }
+    .login-input { width: 100%; padding: 12px 14px; border: 1px solid rgba(201,168,76,0.3); background: rgba(255,255,255,0.06); font-family: 'Montserrat', sans-serif; font-size: 0.88rem; color: #fff; outline: none; margin-bottom: 1.2rem; transition: border-color 0.2s; }
+    .login-input:focus { border-color: var(--gold); }
+    .login-btn { width: 100%; background: var(--gold); color: var(--green-dark); padding: 13px; font-family: 'Montserrat', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.2s; }
     .login-btn:hover { background: var(--gold-light); }
+    .login-error { font-size: 0.75rem; color: #e06060; margin-top: 0.8rem; display: none; }
 
-    .login-error {
-      font-size: 0.75rem;
-      color: #e06060;
-      margin-top: 0.8rem;
-      display: none;
-    }
+    /* ─── APP SHELL ─── */
+    #app { display: none; min-height: 100vh; }
 
-    /* ─── ADMIN DASHBOARD ─── */
-    #dashboard { display: none; }
-
-    header {
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
       background: var(--green-dark);
-      border-bottom: 1px solid rgba(201,168,76,0.2);
-      padding: 0 5%;
-      height: 64px;
+      border-right: 1px solid rgba(201,168,76,0.15);
+      display: flex;
+      flex-direction: column;
+      z-index: 50;
+    }
+    .sidebar-logo { padding: 1.5rem 1.5rem 1rem; border-bottom: 1px solid rgba(201,168,76,0.15); }
+    .sidebar-logo-text { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.1rem; letter-spacing: 2px; text-transform: uppercase; }
+    .sidebar-logo-sub { font-size: 0.5rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-muted); font-weight: 300; margin-top: 2px; }
+    .sidebar-nav { flex: 1; padding: 1rem 0; }
+    .nav-item {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-    }
-
-    .header-logo {
-      font-family: 'Playfair Display', serif;
-      color: var(--gold);
-      font-size: 1.1rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .header-logo span {
-      display: block;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.5rem;
-      letter-spacing: 3px;
-      color: var(--gold-muted);
-      font-weight: 300;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-    }
-
-    .admin-badge {
-      font-size: 0.6rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--gold-muted);
-      font-weight: 600;
-    }
-
-    .logout-btn {
-      background: transparent;
-      border: 1px solid rgba(201,168,76,0.35);
-      color: var(--gold-muted);
-      padding: 7px 18px;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
-    }
-
-    .logout-btn:hover {
-      border-color: var(--gold);
-      color: var(--gold);
-    }
-
-    .dashboard-body {
-      padding: 3rem 5%;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .dashboard-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.8rem;
-      color: var(--green-dark);
-      margin-bottom: 0.3rem;
-    }
-
-    .dashboard-subtitle {
-      font-size: 0.72rem;
-      color: #888;
-      letter-spacing: 1px;
-      margin-bottom: 2.5rem;
-    }
-
-    /* ─── STATS ─── */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1.2rem;
-      margin-bottom: 2.5rem;
-    }
-
-    .stat-card {
-      background: var(--green-dark);
-      padding: 1.5rem;
-      text-align: center;
-    }
-
-    .stat-card-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 2rem;
-      color: var(--gold);
-      display: block;
-    }
-
-    .stat-card-label {
-      font-size: 0.6rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--text-light);
-      font-weight: 300;
-      margin-top: 0.3rem;
-    }
-
-    /* ─── FILTERS ─── */
-    .filters-row {
-      display: flex;
-      gap: 0.8rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .filter-btn {
-      padding: 8px 20px;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      border: 1px solid var(--green-dark);
-      background: transparent;
-      color: var(--green-dark);
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .filter-btn.active,
-    .filter-btn:hover {
-      background: var(--green-dark);
-      color: var(--gold);
-    }
-
-    .filter-search {
-      margin-left: auto;
-      padding: 8px 14px;
-      border: 1px solid #ccc;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.8rem;
-      outline: none;
-      width: 220px;
-      transition: border-color 0.2s;
-    }
-
-    .filter-search:focus { border-color: var(--green); }
-
-    /* ─── REQUESTS TABLE ─── */
-    .requests-section {
-      background: white;
-      border: 1px solid #e0dbd0;
-    }
-
-    .requests-section-header {
-      padding: 1.2rem 1.5rem;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .requests-section-title {
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
       font-size: 0.7rem;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--green-dark);
-      font-weight: 700;
-    }
-
-    .requests-count {
-      font-size: 0.68rem;
-      color: #aaa;
-      letter-spacing: 1px;
-    }
-
-    .request-card {
-      padding: 1.4rem 1.5rem;
-      border-bottom: 1px solid #f0ece4;
-      transition: background 0.15s;
-      cursor: pointer;
-    }
-
-    .request-card:last-child { border-bottom: none; }
-    .request-card:hover { background: #faf8f4; }
-
-    .request-card-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .request-name {
       font-weight: 600;
-      font-size: 0.95rem;
-      color: var(--green-dark);
-    }
-
-    .request-meta {
-      font-size: 0.72rem;
-      color: #888;
-      margin-top: 0.15rem;
-    }
-
-    .request-right {
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    .request-date {
-      font-size: 0.68rem;
-      color: #aaa;
-      letter-spacing: 1px;
-    }
-
-    .status-badge {
-      display: inline-block;
-      font-size: 0.58rem;
-      font-weight: 700;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      padding: 3px 10px;
-      margin-top: 0.4rem;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border-left: 3px solid transparent;
     }
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--gold); }
+    .nav-item.active { background: rgba(201,168,76,0.08); color: var(--gold); border-left-color: var(--gold); }
+    .nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-icon svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .sidebar-bottom { padding: 1rem 1.5rem; border-top: 1px solid rgba(201,168,76,0.15); }
+    .logout-btn { width: 100%; background: transparent; border: 1px solid rgba(201,168,76,0.3); color: var(--gold-muted); padding: 8px; font-family: 'Montserrat', sans-serif; font-size: 0.65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .logout-btn:hover { border-color: var(--gold); color: var(--gold); }
 
+    /* ─── MAIN CONTENT ─── */
+    .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+    .topbar { height: 60px; background: white; border-bottom: 1px solid #e8e0d0; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; position: sticky; top: 0; z-index: 40; }
+    .topbar-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--green-dark); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .topbar-date { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; }
+    .add-job-btn { background: var(--gold); color: var(--green-dark); padding: 8px 20px; border: none; font-family: 'Montserrat', sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+    .add-job-btn:hover { background: var(--gold-light); }
+    .content { padding: 2rem; }
+
+    /* ─── PAGES ─── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ─── STATS ─── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: var(--green-dark); padding: 1.5rem; text-align: center; }
+    .stat-num { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold); display: block; }
+    .stat-label { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); font-weight: 300; margin-top: 0.3rem; }
+
+    /* ─── REQUESTS LIST ─── */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .section-title { font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase; color: var(--green-dark); font-weight: 700; }
+    .panel { background: white; border: 1px solid #e8e0d0; }
+    .panel-header { padding: 1rem 1.5rem; border-bottom: 1px solid #f0ece4; display: flex; align-items: center; justify-content: space-between; }
+    .request-card { padding: 1.2rem 1.5rem; border-bottom: 1px solid #f5f2ec; cursor: pointer; transition: background 0.15s; }
+    .request-card:last-child { border-bottom: none; }
+    .request-card:hover { background: #faf8f4; }
+    .request-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.3rem; }
+    .request-name { font-weight: 600; font-size: 0.92rem; color: var(--green-dark); }
+    .request-date { font-size: 0.67rem; color: #bbb; letter-spacing: 1px; }
+    .request-meta { font-size: 0.72rem; color: #777; margin-bottom: 0.3rem; }
+    .request-service { font-size: 0.72rem; color: #555; }
+    .request-msg { font-size: 0.75rem; color: #888; font-weight: 300; font-style: italic; margin-top: 0.3rem; }
+    .status-badge { display: inline-block; font-size: 0.56rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 2px 8px; }
     .status-new { background: #e8f4ec; color: #1a6b3a; }
     .status-contacted { background: #fff8e6; color: #a07000; }
     .status-booked { background: #e6f0ff; color: #2255a0; }
     .status-closed { background: #f0f0f0; color: #888; }
 
-    .request-service {
-      font-size: 0.75rem;
-      color: #555;
-      margin-top: 0.3rem;
-    }
+    /* ─── CALENDAR ─── */
+    #calendar-wrap { background: white; border: 1px solid #e8e0d0; padding: 1.5rem; }
+    .fc { font-family: 'Montserrat', sans-serif; font-size: 0.8rem; }
+    .fc-toolbar-title { font-family: 'Playfair Display', serif !important; font-size: 1.3rem !important; color: var(--green-dark); }
+    .fc-button-primary { background: var(--green-dark) !important; border-color: var(--green-dark) !important; font-family: 'Montserrat', sans-serif !important; font-size: 0.65rem !important; letter-spacing: 1px !important; text-transform: uppercase !important; }
+    .fc-button-primary:hover { background: var(--green-light) !important; }
+    .fc-event { background: var(--green-dark) !important; border-color: var(--green-dark) !important; cursor: pointer; }
+    .fc-event.status-contacted { background: #a07000 !important; border-color: #a07000 !important; }
+    .fc-event.status-booked { background: #2255a0 !important; border-color: #2255a0 !important; }
+    .fc-event.status-cancelled { background: #888 !important; border-color: #888 !important; text-decoration: line-through; }
+    .fc-daygrid-day:hover { background: #faf8f4 !important; }
 
-    .request-message {
-      font-size: 0.78rem;
-      color: #777;
-      font-weight: 300;
-      line-height: 1.6;
-      margin-top: 0.4rem;
-      max-width: 600px;
-    }
+    /* ─── CLIENTS ─── */
+    .clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .client-card { background: white; border: 1px solid #e8e0d0; padding: 1.5rem; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+    .client-card:hover { border-color: var(--gold); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .client-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--green-dark); margin-bottom: 0.4rem; }
+    .client-detail { font-size: 0.75rem; color: #666; margin-bottom: 0.2rem; }
+    .client-service { font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold-muted); font-weight: 600; margin-top: 0.6rem; }
+    .client-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .btn-sm { padding: 6px 14px; font-family: 'Montserrat', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.15s; }
+    .btn-green { background: var(--green-dark); color: var(--gold); }
+    .btn-green:hover { background: var(--green-light); }
+    .btn-outline-sm { background: transparent; border: 1px solid #ccc; color: #555; }
+    .btn-outline-sm:hover { border-color: var(--green-dark); color: var(--green-dark); }
+    .search-bar { padding: 9px 14px; border: 1px solid #ddd; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; outline: none; width: 260px; transition: border-color 0.2s; }
+    .search-bar:focus { border-color: var(--green); }
 
-    .no-results {
-      padding: 3rem;
-      text-align: center;
-      color: #bbb;
-      font-size: 0.85rem;
-      letter-spacing: 1px;
-    }
+    /* ─── MODAL ─── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { background: var(--green-dark); padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.2rem; }
+    .modal-close { background: none; border: none; color: var(--gold-muted); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+    .modal-close:hover { color: var(--gold); }
+    .modal-body { padding: 1.5rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--green-dark); font-weight: 700; margin-bottom: 0.4rem; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 12px; border: 1px solid #ccc; font-family: 'Montserrat', sans-serif; font-size: 0.85rem; color: #333; outline: none; transition: border-color 0.2s; appearance: none; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--green); }
+    .form-textarea { resize: vertical; min-height: 90px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid #eee; display: flex; gap: 0.75rem; justify-content: flex-end; }
+    .btn-primary { background: var(--gold); color: var(--green-dark); padding: 10px 24px; font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: var(--gold-light); }
+    .btn-danger { background: #c0392b; color: white; padding: 10px 24px; font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border: none; cursor: pointer; }
+    .btn-cancel { background: #eee; color: #555; padding: 10px 24px; font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border: none; cursor: pointer; }
 
-    @media (max-width: 600px) {
-      .filter-search { width: 100%; margin-left: 0; }
-      .request-card-top { flex-direction: column; }
-      .request-right { text-align: left; }
+    /* ─── EMAIL COMPOSER ─── */
+    .email-to { font-size: 0.8rem; color: var(--green-dark); font-weight: 600; margin-bottom: 0.3rem; }
+
+    /* ─── TOAST ─── */
+    .toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--green-dark); color: var(--gold); padding: 1rem 1.5rem; font-size: 0.78rem; letter-spacing: 1px; z-index: 999; display: none; border-left: 3px solid var(--gold); }
+    .toast.show { display: block; }
+
+    .empty-state { text-align: center; padding: 3rem; color: #bbb; font-size: 0.85rem; }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .main { margin-left: 0; }
+      .form-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-  <!-- LOGIN -->
-  <div id="login-screen">
-    <div class="login-box">
-      <div class="login-logo">Thompson</div>
-      <div class="login-sub">Admin Panel</div>
-      <label class="login-label">Password</label>
-      <input class="login-input" type="password" id="pw-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter') doLogin()" />
-      <button class="login-btn" onclick="doLogin()">Sign In</button>
-      <div class="login-error" id="login-error">Incorrect password. Try again.</div>
-    </div>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Thompson</div>
+    <div class="login-sub">Admin Panel</div>
+    <label class="login-label">Password</label>
+    <input class="login-input" type="password" id="pw-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter') doLogin()" />
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
   </div>
+</div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard">
-    <header>
-      <div class="header-logo">
-        Thompson
-        <span>Lawn &amp; Snow — Admin</span>
+<!-- APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-text">Thompson</div>
+      <div class="sidebar-logo-sub">Lawn &amp; Snow — Admin</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+        Dashboard
       </div>
-      <div class="header-right">
-        <span class="admin-badge">Admin</span>
-        <button class="logout-btn" onclick="doLogout()">Log Out</button>
+      <div class="nav-item" onclick="showPage('calendar', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        Calendar
       </div>
-    </header>
-
-    <div class="dashboard-body">
-      <div class="dashboard-title">Quote Requests</div>
-      <div class="dashboard-subtitle" id="dashboard-date"></div>
-
-      <div class="stats-row">
-        <div class="stat-card">
-          <span class="stat-card-num" id="stat-total">0</span>
-          <span class="stat-card-label">Total Requests</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-num" id="stat-new">0</span>
-          <span class="stat-card-label">New</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-num" id="stat-contacted">0</span>
-          <span class="stat-card-label">Contacted</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-num" id="stat-booked">0</span>
-          <span class="stat-card-label">Booked</span>
-        </div>
+      <div class="nav-item" onclick="showPage('requests', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+        Quote Requests
+        <span id="new-badge" style="margin-left:auto;background:var(--gold);color:var(--green-dark);font-size:0.55rem;font-weight:700;padding:2px 6px;border-radius:2px;display:none"></span>
       </div>
-
-      <div class="filters-row">
-        <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
-        <button class="filter-btn" onclick="setFilter('new', this)">New</button>
-        <button class="filter-btn" onclick="setFilter('contacted', this)">Contacted</button>
-        <button class="filter-btn" onclick="setFilter('booked', this)">Booked</button>
-        <button class="filter-btn" onclick="setFilter('closed', this)">Closed</button>
-        <input class="filter-search" type="text" placeholder="Search name or service..." id="search-input" oninput="renderRequests()" />
+      <div class="nav-item" onclick="showPage('clients', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        Clients
       </div>
+      <div class="nav-item" onclick="showPage('email', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+        Send Email
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="doLogout()">Log Out</button>
+    </div>
+  </aside>
 
-      <div class="requests-section">
-        <div class="requests-section-header">
-          <span class="requests-section-title">Requests</span>
-          <span class="requests-count" id="requests-count"></span>
-        </div>
-        <div id="requests-list"></div>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <span class="topbar-date" id="topbar-date"></span>
+        <button class="add-job-btn" onclick="openJobModal()">+ Add Job</button>
       </div>
     </div>
-  </div>
 
-  <script>
-    // ─── PASSWORD ───
-    // Change this to whatever password you want
-    const ADMIN_PASSWORD = 'thompson2024';
+    <div class="content">
 
-    function doLogin() {
-      const val = document.getElementById('pw-input').value;
-      if (val === ADMIN_PASSWORD) {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        initDashboard();
-      } else {
-        document.getElementById('login-error').style.display = 'block';
-        document.getElementById('pw-input').value = '';
-        document.getElementById('pw-input').focus();
-      }
-    }
+      <!-- DASHBOARD PAGE -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-row">
+          <div class="stat-card"><span class="stat-num" id="s-total">0</span><span class="stat-label">Total Requests</span></div>
+          <div class="stat-card"><span class="stat-num" id="s-new">0</span><span class="stat-label">New</span></div>
+          <div class="stat-card"><span class="stat-num" id="s-booked">0</span><span class="stat-label">Booked</span></div>
+          <div class="stat-card"><span class="stat-num" id="s-clients">0</span><span class="stat-label">Clients</span></div>
+        </div>
+        <div class="section-header"><span class="section-title">Recent Quote Requests</span></div>
+        <div class="panel" id="dash-requests"></div>
+      </div>
 
-    function doLogout() {
-      document.getElementById('login-screen').style.display = 'flex';
-      document.getElementById('dashboard').style.display = 'none';
-      document.getElementById('pw-input').value = '';
-      document.getElementById('login-error').style.display = 'none';
-    }
+      <!-- CALENDAR PAGE -->
+      <div class="page" id="page-calendar">
+        <div id="calendar-wrap">
+          <div id="calendar"></div>
+        </div>
+      </div>
 
-    // ─── SAMPLE DATA (replace with real submissions later) ───
-    const requests = [
-      {
-        id: 1,
-        name: 'Sarah Mitchell',
-        email: 'sarah.mitchell@gmail.com',
-        phone: '(403) 555-0187',
-        service: 'Lawn Care - Medium Yard',
-        frequency: 'Biweekly',
-        message: 'Hi, looking for someone reliable to mow our backyard every two weeks. We have a medium-sized lot in Panorama Hills.',
-        date: '2024-06-10',
-        status: 'new'
-      },
-      {
-        id: 2,
-        name: 'Dave Kowalski',
-        email: 'd.kowalski@outlook.com',
-        phone: '(403) 555-0234',
-        service: 'Snow Removal - Large',
-        frequency: 'Monthly Plan',
-        message: 'Need full seasonal snow removal for a long double driveway and front walk. Based in Tuscany.',
-        date: '2024-06-08',
-        status: 'contacted'
-      },
-      {
-        id: 3,
-        name: 'Linda Park',
-        email: 'lindapark82@gmail.com',
-        phone: '',
-        service: 'Lawn Care - Small Yard',
-        frequency: 'One-Time Visit',
-        message: "Just need a one-time mow before a family gathering next weekend. Yard hasn't been done in a while.",
-        date: '2024-06-07',
-        status: 'booked'
-      },
-      {
-        id: 4,
-        name: 'James Okafor',
-        email: 'jokafor@hotmail.com',
-        phone: '(403) 555-0099',
-        service: 'Seasonal Cleanup',
-        frequency: 'One-Time Visit',
-        message: 'Spring cleanup needed — lots of leaves and debris from winter. Would like a quote.',
-        date: '2024-06-05',
-        status: 'closed'
-      },
-    ];
-
-    let currentFilter = 'all';
-
-    function initDashboard() {
-      const now = new Date();
-      document.getElementById('dashboard-date').textContent =
-        now.toLocaleDateString('en-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-      updateStats();
-      renderRequests();
-    }
-
-    function updateStats() {
-      document.getElementById('stat-total').textContent = requests.length;
-      document.getElementById('stat-new').textContent = requests.filter(r => r.status === 'new').length;
-      document.getElementById('stat-contacted').textContent = requests.filter(r => r.status === 'contacted').length;
-      document.getElementById('stat-booked').textContent = requests.filter(r => r.status === 'booked').length;
-    }
-
-    function setFilter(filter, btn) {
-      currentFilter = filter;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderRequests();
-    }
-
-    function renderRequests() {
-      const search = document.getElementById('search-input').value.toLowerCase();
-      let filtered = requests.filter(r => {
-        const matchFilter = currentFilter === 'all' || r.status === currentFilter;
-        const matchSearch = !search ||
-          r.name.toLowerCase().includes(search) ||
-          r.service.toLowerCase().includes(search) ||
-          r.email.toLowerCase().includes(search);
-        return matchFilter && matchSearch;
-      });
-
-      document.getElementById('requests-count').textContent = filtered.length + ' request' + (filtered.length !== 1 ? 's' : '');
-
-      const list = document.getElementById('requests-list');
-      if (filtered.length === 0) {
-        list.innerHTML = '<div class="no-results">No requests found.</div>';
-        return;
-      }
-
-      list.innerHTML = filtered.map(r => `
-        <div class="request-card">
-          <div class="request-card-top">
-            <div>
-              <div class="request-name">${r.name}</div>
-              <div class="request-meta">${r.email}${r.phone ? ' &nbsp;·&nbsp; ' + r.phone : ''}</div>
-            </div>
-            <div class="request-right">
-              <div class="request-date">${formatDate(r.date)}</div>
-              <div><span class="status-badge status-${r.status}">${r.status}</span></div>
-            </div>
+      <!-- REQUESTS PAGE -->
+      <div class="page" id="page-requests">
+        <div class="section-header">
+          <span class="section-title">All Quote Requests</span>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn-sm btn-green" onclick="filterRequests('all')">All</button>
+            <button class="btn-sm btn-outline-sm" onclick="filterRequests('new')">New</button>
+            <button class="btn-sm btn-outline-sm" onclick="filterRequests('contacted')">Contacted</button>
+            <button class="btn-sm btn-outline-sm" onclick="filterRequests('booked')">Booked</button>
           </div>
-          <div class="request-service">${r.service} &nbsp;·&nbsp; ${r.frequency}</div>
-          ${r.message ? `<div class="request-message">"${r.message}"</div>` : ''}
         </div>
-      `).join('');
+        <div class="panel" id="all-requests"></div>
+      </div>
+
+      <!-- CLIENTS PAGE -->
+      <div class="page" id="page-clients">
+        <div class="section-header">
+          <span class="section-title">Clients</span>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <input class="search-bar" type="text" placeholder="Search clients..." oninput="searchClients(this.value)" />
+            <button class="add-job-btn" onclick="openClientModal()">+ Add Client</button>
+          </div>
+        </div>
+        <div class="clients-grid" id="clients-grid"></div>
+      </div>
+
+      <!-- EMAIL PAGE -->
+      <div class="page" id="page-email">
+        <div class="section-header"><span class="section-title">Send Email to Client</span></div>
+        <div class="panel" style="max-width:640px">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">To</label>
+              <select class="form-select" id="email-to-select" onchange="updateEmailTo()">
+                <option value="">Select a client...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subject</label>
+              <input class="form-input" type="text" id="email-subject" placeholder="e.g. Your quote from Thompson Lawn & Snow" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Message</label>
+              <textarea class="form-textarea" id="email-body" style="min-height:180px" placeholder="Write your message here..."></textarea>
+            </div>
+            <button class="btn-primary" onclick="sendEmail()" style="width:100%;text-align:center" id="send-email-btn">Send Email</button>
+            <p style="font-size:0.7rem;color:#aaa;margin-top:0.75rem;text-align:center">Emails sent via EmailJS — configure your keys in the script section below.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- JOB MODAL -->
+<div class="modal-overlay" id="job-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="job-modal-title">Add Job</span>
+      <button class="modal-close" onclick="closeModal('job-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="job-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input class="form-input" type="text" id="job-client" placeholder="Jane Smith" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-input" type="tel" id="job-phone" placeholder="(403) 555-0123" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="job-email" placeholder="client@email.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input class="form-input" type="text" id="job-address" placeholder="123 Main St NW, Calgary" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Service</label>
+          <select class="form-select" id="job-service">
+            <option>Lawn Mowing — Small</option>
+            <option>Lawn Mowing — Medium</option>
+            <option>Lawn Mowing — Large</option>
+            <option>Trimming & Edging</option>
+            <option>Snow Removal — Small/Medium</option>
+            <option>Snow Removal — Large</option>
+            <option>Spring Cleanup</option>
+            <option>Fall Leaf Cleanup</option>
+            <option>Full Yard Cleanup</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="job-status">
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="booked">Booked</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="date" id="job-date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time</label>
+          <input class="form-input" type="time" id="job-time" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="job-notes" placeholder="Any special notes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" id="delete-job-btn" onclick="deleteJob()" style="display:none;margin-right:auto">Delete Job</button>
+      <button class="btn-cancel" onclick="closeModal('job-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT MODAL -->
+<div class="modal-overlay" id="client-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="client-modal-title">Add Client</span>
+      <button class="modal-close" onclick="closeModal('client-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="client-id" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" type="text" id="client-first" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" type="text" id="client-last" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" id="client-email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-input" type="tel" id="client-phone" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input class="form-input" type="text" id="client-address" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Service</label>
+          <select class="form-select" id="client-service">
+            <option>Lawn Mowing — Small</option>
+            <option>Lawn Mowing — Medium</option>
+            <option>Lawn Mowing — Large</option>
+            <option>Trimming & Edging</option>
+            <option>Snow Removal — Small/Medium</option>
+            <option>Snow Removal — Large</option>
+            <option>Spring Cleanup</option>
+            <option>Fall Leaf Cleanup</option>
+            <option>Full Yard Cleanup</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Frequency</label>
+          <select class="form-select" id="client-frequency">
+            <option>One-Time</option>
+            <option>Biweekly</option>
+            <option>Monthly</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="client-notes"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" id="delete-client-btn" onclick="deleteClient()" style="display:none;margin-right:auto">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('client-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- REQUEST DETAIL MODAL -->
+<div class="modal-overlay" id="request-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Quote Request</span>
+      <button class="modal-close" onclick="closeModal('request-modal')">×</button>
+    </div>
+    <div class="modal-body" id="request-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('request-modal')">Close</button>
+      <button class="btn-primary" onclick="convertToClient()">Convert to Client</button>
+      <button class="btn-green btn-sm" style="padding:10px 20px" onclick="replyToRequest()">Reply by Email</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────
+  const ADMIN_PASSWORD = 'thompson2024'; // Change this!
+
+  // EmailJS — fill in after setting up at emailjs.com
+  const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';
+  const EMAILJS_SERVICE_ID  = 'YOUR_EMAILJS_SERVICE_ID';
+  const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';
+
+  // ─── AUTH ─────────────────────────────────────────────────────────
+  function doLogin() {
+    const val = document.getElementById('pw-input').value;
+    if (val === ADMIN_PASSWORD) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initApp();
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+      document.getElementById('pw-input').value = '';
+    }
+  }
+  function doLogout() {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  // ─── DATA (localStorage) ──────────────────────────────────────────
+  function getData(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; } }
+  function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+  let jobs = [];
+  let clients = [];
+  let requests = [];
+  let calendar;
+  let activeRequest = null;
+
+  // ─── INIT ─────────────────────────────────────────────────────────
+  function initApp() {
+    jobs = getData('tls_jobs', []);
+    clients = getData('tls_clients', []);
+    requests = getData('tls_requests', sampleRequests());
+
+    document.getElementById('topbar-date').textContent =
+      new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    updateStats();
+    renderDashboard();
+    renderRequests('all');
+    renderClients('');
+    populateEmailTo();
+    initCalendar();
+    updateNewBadge();
+  }
+
+  function sampleRequests() {
+    return [
+      { id: 'r1', name: 'Sarah Mitchell', email: 'sarah.mitchell@gmail.com', phone: '(403) 555-0187', service: 'Lawn Mowing — Medium', frequency: 'Biweekly', message: 'Hi, looking for reliable biweekly mowing in Panorama Hills.', date: '2024-06-10', status: 'new' },
+      { id: 'r2', name: 'Dave Kowalski', email: 'd.kowalski@outlook.com', phone: '(403) 555-0234', service: 'Snow Removal — Large', frequency: 'Monthly Plan', message: 'Need full seasonal snow removal — long double driveway in Tuscany.', date: '2024-06-08', status: 'contacted' },
+      { id: 'r3', name: 'Linda Park', email: 'lindapark82@gmail.com', phone: '', service: 'Lawn Mowing — Small', frequency: 'One-Time', message: "One-time mow before a family gathering next weekend.", date: '2024-06-07', status: 'booked' },
+    ];
+  }
+
+  // ─── STATS ────────────────────────────────────────────────────────
+  function updateStats() {
+    document.getElementById('s-total').textContent = requests.length;
+    document.getElementById('s-new').textContent = requests.filter(r => r.status === 'new').length;
+    document.getElementById('s-booked').textContent = requests.filter(r => r.status === 'booked').length;
+    document.getElementById('s-clients').textContent = clients.length;
+  }
+
+  function updateNewBadge() {
+    const n = requests.filter(r => r.status === 'new').length;
+    const b = document.getElementById('new-badge');
+    if (n > 0) { b.style.display = 'inline'; b.textContent = n; }
+    else b.style.display = 'none';
+  }
+
+  // ─── NAVIGATION ───────────────────────────────────────────────────
+  function showPage(name, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    if (el) el.classList.add('active');
+    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email' };
+    document.getElementById('page-title').textContent = titles[name] || name;
+    if (name === 'calendar' && calendar) calendar.render();
+  }
+
+  // ─── CALENDAR ─────────────────────────────────────────────────────
+  function initCalendar() {
+    const el = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(el, {
+      initialView: 'dayGridMonth',
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+      editable: true,
+      droppable: true,
+      events: jobsToEvents(),
+      eventClick: function(info) { openJobFromCalendar(info.event); },
+      eventDrop: function(info) { updateJobDate(info.event); },
+      eventResize: function(info) { updateJobDate(info.event); },
+      height: 'auto',
+    });
+    calendar.render();
+  }
+
+  function jobsToEvents() {
+    return jobs.map(j => ({
+      id: j.id,
+      title: (j.client || 'Job') + ' — ' + (j.service || ''),
+      start: j.date + (j.time ? 'T' + j.time : ''),
+      classNames: ['status-' + (j.status || 'new')],
+      extendedProps: j,
+    }));
+  }
+
+  function refreshCalendar() {
+    if (!calendar) return;
+    calendar.removeAllEvents();
+    jobsToEvents().forEach(e => calendar.addEvent(e));
+  }
+
+  function updateJobDate(event) {
+    const j = jobs.find(j => j.id === event.id);
+    if (j) {
+      j.date = event.startStr.split('T')[0];
+      setData('tls_jobs', jobs);
+      showToast('Job rescheduled!');
+    }
+  }
+
+  function openJobFromCalendar(event) {
+    const j = event.extendedProps;
+    openJobModal(j.id);
+  }
+
+  // ─── JOB MODAL ────────────────────────────────────────────────────
+  function openJobModal(id) {
+    const j = id ? jobs.find(j => j.id === id) : null;
+    document.getElementById('job-modal-title').textContent = j ? 'Edit Job' : 'Add Job';
+    document.getElementById('job-id').value = j ? j.id : '';
+    document.getElementById('job-client').value = j ? j.client : '';
+    document.getElementById('job-phone').value = j ? j.phone : '';
+    document.getElementById('job-email').value = j ? j.email : '';
+    document.getElementById('job-address').value = j ? j.address : '';
+    document.getElementById('job-service').value = j ? j.service : 'Lawn Mowing — Small';
+    document.getElementById('job-status').value = j ? j.status : 'new';
+    document.getElementById('job-date').value = j ? j.date : '';
+    document.getElementById('job-time').value = j ? j.time : '';
+    document.getElementById('job-notes').value = j ? j.notes : '';
+    document.getElementById('delete-job-btn').style.display = j ? 'inline-block' : 'none';
+    openModal('job-modal');
+  }
+
+  function saveJob() {
+    const id = document.getElementById('job-id').value || 'j' + Date.now();
+    const job = {
+      id,
+      client: document.getElementById('job-client').value,
+      phone: document.getElementById('job-phone').value,
+      email: document.getElementById('job-email').value,
+      address: document.getElementById('job-address').value,
+      service: document.getElementById('job-service').value,
+      status: document.getElementById('job-status').value,
+      date: document.getElementById('job-date').value,
+      time: document.getElementById('job-time').value,
+      notes: document.getElementById('job-notes').value,
+    };
+    const idx = jobs.findIndex(j => j.id === id);
+    if (idx >= 0) jobs[idx] = job; else jobs.push(job);
+    setData('tls_jobs', jobs);
+    closeModal('job-modal');
+    refreshCalendar();
+    showToast('Job saved!');
+  }
+
+  function deleteJob() {
+    const id = document.getElementById('job-id').value;
+    jobs = jobs.filter(j => j.id !== id);
+    setData('tls_jobs', jobs);
+    closeModal('job-modal');
+    refreshCalendar();
+    showToast('Job deleted.');
+  }
+
+  // ─── REQUESTS ─────────────────────────────────────────────────────
+  let requestFilter = 'all';
+  function filterRequests(f) { requestFilter = f; renderRequests(f); }
+
+  function renderRequests(filter) {
+    const list = filter === 'all' ? requests : requests.filter(r => r.status === filter);
+    const html = list.length ? list.map(r => requestCard(r)).join('') : '<div class="empty-state">No requests found.</div>';
+    document.getElementById('all-requests').innerHTML = html;
+  }
+
+  function renderDashboard() {
+    const recent = [...requests].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+    document.getElementById('dash-requests').innerHTML = recent.length
+      ? recent.map(r => requestCard(r)).join('')
+      : '<div class="empty-state">No requests yet.</div>';
+  }
+
+  function requestCard(r) {
+    return `<div class="request-card" onclick="openRequest('${r.id}')">
+      <div class="request-top">
+        <div class="request-name">${r.name}</div>
+        <div style="text-align:right">
+          <div class="request-date">${fmtDate(r.date)}</div>
+          <span class="status-badge status-${r.status}">${r.status}</span>
+        </div>
+      </div>
+      <div class="request-meta">${r.email}${r.phone ? ' · ' + r.phone : ''}</div>
+      <div class="request-service">${r.service} · ${r.frequency}</div>
+      ${r.message ? `<div class="request-msg">"${r.message}"</div>` : ''}
+    </div>`;
+  }
+
+  function openRequest(id) {
+    const r = requests.find(r => r.id === id);
+    if (!r) return;
+    activeRequest = r;
+    document.getElementById('request-modal-body').innerHTML = `
+      <div style="margin-bottom:1.5rem">
+        <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--green-dark);margin-bottom:0.3rem">${r.name}</div>
+        <span class="status-badge status-${r.status}" style="font-size:0.65rem">${r.status}</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="req-status-sel" onchange="updateRequestStatus('${r.id}', this.value)">
+          <option value="new" ${r.status==='new'?'selected':''}>New</option>
+          <option value="contacted" ${r.status==='contacted'?'selected':''}>Contacted</option>
+          <option value="booked" ${r.status==='booked'?'selected':''}>Booked</option>
+          <option value="closed" ${r.status==='closed'?'selected':''}>Closed</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div><div class="form-label">Email</div><div style="font-size:0.85rem;color:#444">${r.email || '—'}</div></div>
+        <div><div class="form-label">Phone</div><div style="font-size:0.85rem;color:#444">${r.phone || '—'}</div></div>
+        <div><div class="form-label">Service</div><div style="font-size:0.85rem;color:#444">${r.service}</div></div>
+        <div><div class="form-label">Frequency</div><div style="font-size:0.85rem;color:#444">${r.frequency}</div></div>
+      </div>
+      ${r.message ? `<div class="form-label">Message</div><div style="font-size:0.85rem;color:#555;line-height:1.7;font-style:italic">"${r.message}"</div>` : ''}
+    `;
+    openModal('request-modal');
+  }
+
+  function updateRequestStatus(id, status) {
+    const r = requests.find(r => r.id === id);
+    if (r) { r.status = status; setData('tls_requests', requests); updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter); showToast('Status updated!'); }
+  }
+
+  function convertToClient() {
+    if (!activeRequest) return;
+    const r = activeRequest;
+    const nameParts = r.name.split(' ');
+    const c = { id: 'c' + Date.now(), first: nameParts[0] || '', last: nameParts.slice(1).join(' ') || '', email: r.email, phone: r.phone, address: '', service: r.service, frequency: r.frequency, notes: r.message };
+    clients.push(c);
+    setData('tls_clients', clients);
+    updateStats();
+    renderClients('');
+    populateEmailTo();
+    closeModal('request-modal');
+    showToast(r.name + ' added as client!');
+  }
+
+  function replyToRequest() {
+    if (!activeRequest) return;
+    closeModal('request-modal');
+    showPage('email', document.querySelector('.nav-item:nth-child(5)'));
+    document.getElementById('email-to-select').value = activeRequest.email;
+    document.getElementById('email-subject').value = 'Re: Your quote request — Thompson Lawn & Snow';
+    document.getElementById('email-body').value = `Hi ${activeRequest.name.split(' ')[0]},\n\nThank you for reaching out to Thompson Lawn & Snow! We'd love to help you with your ${activeRequest.service} needs.\n\nPlease feel free to reply to this email or give us a call and we'll get you scheduled.\n\nBest regards,\nThompson Lawn & Snow\ninfo@thompsonlawnsnow.ca`;
+  }
+
+  // ─── CLIENTS ──────────────────────────────────────────────────────
+  function renderClients(search) {
+    const list = search ? clients.filter(c => (c.first + ' ' + c.last + ' ' + c.email).toLowerCase().includes(search.toLowerCase())) : clients;
+    const grid = document.getElementById('clients-grid');
+    grid.innerHTML = list.length ? list.map(c => `
+      <div class="client-card" onclick="openClientModal('${c.id}')">
+        <div class="client-name">${c.first} ${c.last}</div>
+        <div class="client-detail">📧 ${c.email || '—'}</div>
+        <div class="client-detail">📞 ${c.phone || '—'}</div>
+        <div class="client-detail">📍 ${c.address || '—'}</div>
+        <div class="client-service">${c.service || ''} · ${c.frequency || ''}</div>
+        <div class="client-actions">
+          <button class="btn-sm btn-green" onclick="event.stopPropagation();emailClient('${c.id}')">Email</button>
+          <button class="btn-sm btn-outline-sm" onclick="event.stopPropagation();addJobForClient('${c.id}')">+ Job</button>
+        </div>
+      </div>
+    `).join('') : '<div class="empty-state" style="grid-column:1/-1">No clients yet. Convert a request or add one manually.</div>';
+  }
+
+  function searchClients(val) { renderClients(val); }
+
+  function openClientModal(id) {
+    const c = id ? clients.find(c => c.id === id) : null;
+    document.getElementById('client-modal-title').textContent = c ? 'Edit Client' : 'Add Client';
+    document.getElementById('client-id').value = c ? c.id : '';
+    document.getElementById('client-first').value = c ? c.first : '';
+    document.getElementById('client-last').value = c ? c.last : '';
+    document.getElementById('client-email').value = c ? c.email : '';
+    document.getElementById('client-phone').value = c ? c.phone : '';
+    document.getElementById('client-address').value = c ? c.address : '';
+    document.getElementById('client-service').value = c ? c.service : 'Lawn Mowing — Small';
+    document.getElementById('client-frequency').value = c ? c.frequency : 'One-Time';
+    document.getElementById('client-notes').value = c ? c.notes : '';
+    document.getElementById('delete-client-btn').style.display = c ? 'inline-block' : 'none';
+    openModal('client-modal');
+  }
+
+  function saveClient() {
+    const id = document.getElementById('client-id').value || 'c' + Date.now();
+    const c = { id, first: document.getElementById('client-first').value, last: document.getElementById('client-last').value, email: document.getElementById('client-email').value, phone: document.getElementById('client-phone').value, address: document.getElementById('client-address').value, service: document.getElementById('client-service').value, frequency: document.getElementById('client-frequency').value, notes: document.getElementById('client-notes').value };
+    const idx = clients.findIndex(c => c.id === id);
+    if (idx >= 0) clients[idx] = c; else clients.push(c);
+    setData('tls_clients', clients);
+    closeModal('client-modal');
+    updateStats();
+    renderClients('');
+    populateEmailTo();
+    showToast('Client saved!');
+  }
+
+  function deleteClient() {
+    const id = document.getElementById('client-id').value;
+    clients = clients.filter(c => c.id !== id);
+    setData('tls_clients', clients);
+    closeModal('client-modal');
+    updateStats();
+    renderClients('');
+    populateEmailTo();
+    showToast('Client deleted.');
+  }
+
+  function emailClient(id) {
+    const c = clients.find(c => c.id === id);
+    if (!c) return;
+    showPage('email', document.querySelector('.nav-item:nth-child(5)'));
+    document.getElementById('email-to-select').value = c.email;
+    document.getElementById('email-subject').value = 'Thompson Lawn & Snow — Message for ' + c.first;
+  }
+
+  function addJobForClient(id) {
+    const c = clients.find(c => c.id === id);
+    openJobModal();
+    setTimeout(() => {
+      if (c) {
+        document.getElementById('job-client').value = c.first + ' ' + c.last;
+        document.getElementById('job-email').value = c.email;
+        document.getElementById('job-phone').value = c.phone;
+        document.getElementById('job-address').value = c.address;
+        document.getElementById('job-service').value = c.service;
+      }
+    }, 50);
+  }
+
+  // ─── EMAIL ────────────────────────────────────────────────────────
+  function populateEmailTo() {
+    const sel = document.getElementById('email-to-select');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Select a client...</option>' +
+      clients.map(c => `<option value="${c.email}">${c.first} ${c.last} (${c.email})</option>`).join('') +
+      requests.map(r => `<option value="${r.email}">${r.name} — request (${r.email})</option>`).join('');
+    if (cur) sel.value = cur;
+  }
+
+  function sendEmail() {
+    const to = document.getElementById('email-to-select').value;
+    const subject = document.getElementById('email-subject').value;
+    const body = document.getElementById('email-body').value;
+    if (!to || !subject || !body) { showToast('Please fill in all fields.'); return; }
+
+    if (EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
+      showToast('EmailJS not configured yet — see script config.');
+      return;
     }
 
-    function formatDate(dateStr) {
-      const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-  </script>
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    const btn = document.getElementById('send-email-btn');
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: to, subject, message: body, from_name: 'Thompson Lawn & Snow', reply_to: 'info@thompsonlawnsnow.ca' })
+      .then(() => {
+        showToast('Email sent successfully!');
+        document.getElementById('email-subject').value = '';
+        document.getElementById('email-body').value = '';
+      })
+      .catch(err => { showToast('Failed to send. Check EmailJS config.'); console.error(err); })
+      .finally(() => { btn.textContent = 'Send Email'; btn.disabled = false; });
+  }
+
+  // ─── MODALS ───────────────────────────────────────────────────────
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+  // ─── TOAST ────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ─── UTILS ────────────────────────────────────────────────────────
+  function fmtDate(str) { if (!str) return ''; const d = new Date(str + 'T00:00:00'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }); }
+</script>
 
 </body>
 </html>
