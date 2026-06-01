@@ -338,11 +338,12 @@
       <div class="page" id="page-requests">
         <div class="section-header">
           <span class="section-title">All Quote Requests</span>
-          <div style="display:flex;gap:0.5rem">
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
             <button class="btn-sm btn-green" onclick="filterRequests('all')">All</button>
             <button class="btn-sm btn-outline-sm" onclick="filterRequests('new')">New</button>
             <button class="btn-sm btn-outline-sm" onclick="filterRequests('contacted')">Contacted</button>
             <button class="btn-sm btn-outline-sm" onclick="filterRequests('booked')">Booked</button>
+            <button class="add-job-btn" onclick="openAddRequestModal()" style="margin-left:0.5rem">+ Add Request</button>
           </div>
         </div>
         <div class="panel" id="all-requests"></div>
@@ -626,6 +627,64 @@
       <button class="btn-cancel" onclick="closeModal('request-modal')">Close</button>
       <button class="btn-primary" onclick="convertToClient()">Convert to Client</button>
       <button class="btn-green btn-sm" style="padding:10px 20px" onclick="replyToRequest()">Reply by Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD REQUEST MODAL -->
+<div class="modal-overlay" id="add-request-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Quote Request</span>
+      <button class="modal-close" onclick="closeModal('add-request-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-input" type="text" id="ar-name" placeholder="Jane Smith" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-input" type="tel" id="ar-phone" placeholder="(403) 555-0123" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="ar-email" placeholder="client@email.com" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Service</label>
+          <select class="form-select" id="ar-service">
+            <option>Lawn Mowing — Small</option>
+            <option>Lawn Mowing — Medium</option>
+            <option>Lawn Mowing — Large</option>
+            <option>Trimming &amp; Edging</option>
+            <option>Snow Removal — Small/Medium</option>
+            <option>Snow Removal — Large</option>
+            <option>Spring Cleanup</option>
+            <option>Fall Leaf Cleanup</option>
+            <option>Full Yard Cleanup</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Frequency</label>
+          <select class="form-select" id="ar-frequency">
+            <option>One-Time</option>
+            <option>Biweekly</option>
+            <option>Monthly Plan</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message / Notes</label>
+        <textarea class="form-textarea" id="ar-message" placeholder="Any details from the request..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('add-request-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveAddedRequest()">Add Request</button>
     </div>
   </div>
 </div>
@@ -1039,6 +1098,41 @@
   // ─── UTILS ────────────────────────────────────────────────────────
   function fmtDate(str) { if (!str) return ''; const d = new Date(str + 'T00:00:00'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }); }
   function fmt$(n) { return '$' + (n || 0).toFixed(2); }
+
+  // ─── ADD REQUEST ──────────────────────────────────────────────────
+  function openAddRequestModal() {
+    document.getElementById('ar-name').value = '';
+    document.getElementById('ar-phone').value = '';
+    document.getElementById('ar-email').value = '';
+    document.getElementById('ar-message').value = '';
+    openModal('add-request-modal');
+  }
+
+  function saveAddedRequest() {
+    const name = document.getElementById('ar-name').value.trim();
+    const email = document.getElementById('ar-email').value.trim();
+    if (!name) { showToast('Please enter a name.'); return; }
+    const r = {
+      id: 'r' + Date.now(),
+      name,
+      email,
+      phone: document.getElementById('ar-phone').value.trim(),
+      service: document.getElementById('ar-service').value,
+      frequency: document.getElementById('ar-frequency').value,
+      message: document.getElementById('ar-message').value.trim(),
+      date: new Date().toISOString().split('T')[0],
+      status: 'new'
+    };
+    requests.unshift(r);
+    setData('tls_requests', requests);
+    updateStats();
+    updateNewBadge();
+    renderDashboard();
+    renderRequests(requestFilter);
+    populateEmailTo();
+    closeModal('add-request-modal');
+    showToast(name + ' added as a new request!');
+  }
 
   // ─── INVOICES ─────────────────────────────────────────────────────
   let invoices = JSON.parse(localStorage.getItem('tls_invoices') || '[]');
