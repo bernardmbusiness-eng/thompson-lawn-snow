@@ -192,6 +192,61 @@
       .main { margin-left: 0; }
       .form-row { grid-template-columns: 1fr; }
     }
+
+  /* ─── INVOICES ─── */
+  .invoice-list-item { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-bottom:1px solid rgba(0,0,0,0.06); gap:1rem; }
+  .invoice-list-item:last-child { border-bottom:none; }
+  .inv-num { font-weight:600; color:var(--green); font-size:0.85rem; }
+  .inv-client-lbl { font-size:0.78rem; color:#555; margin-top:2px; }
+  .inv-amount { font-weight:700; color:var(--green); font-size:0.95rem; }
+  .inv-status { font-size:0.6rem; font-weight:700; letter-spacing:1px; padding:3px 8px; border-radius:2px; text-transform:uppercase; }
+  .inv-status.paid { background:#d4edda; color:#155724; }
+  .inv-status.unpaid { background:#fff3cd; color:#856404; }
+  .line-items-table { width:100%; border-collapse:collapse; margin:0.5rem 0; }
+  .line-items-table th { font-size:0.62rem; letter-spacing:1px; text-transform:uppercase; color:#888; font-weight:600; padding:0.5rem; border-bottom:1px solid #ddd; text-align:left; }
+  .line-items-table td { padding:0.35rem 0.5rem; vertical-align:middle; }
+  .line-items-table input { border:1px solid #ddd; border-radius:3px; padding:0.35rem 0.5rem; font-family:inherit; font-size:0.8rem; width:100%; }
+  .col-desc { width:46%; } .col-qty,.col-rate { width:14%; } .col-total { width:18%; font-weight:600; color:var(--green); font-size:0.82rem; } .col-del { width:8%; }
+  .del-row-btn { background:none; border:none; cursor:pointer; color:#ccc; font-size:1.2rem; padding:0 4px; line-height:1; }
+  .del-row-btn:hover { color:#e74c3c; }
+  .inv-totals { text-align:right; margin-top:0.75rem; }
+  .inv-totals-row { display:flex; justify-content:flex-end; gap:2.5rem; font-size:0.82rem; padding:0.2rem 0; }
+  .inv-totals-row.total-row { font-weight:700; font-size:0.95rem; color:var(--green); border-top:1px solid #ddd; padding-top:0.5rem; margin-top:0.25rem; }
+
+  /* ─── INVOICE PREVIEW ─── */
+  .invoice-preview { font-family:'Montserrat',sans-serif; background:#fff; }
+  .inv-hdr { background:var(--green); color:white; padding:1.75rem 2.5rem; display:flex; justify-content:space-between; align-items:flex-start; }
+  .inv-hdr-logo { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--gold); letter-spacing:3px; text-transform:uppercase; }
+  .inv-hdr-sub { font-size:0.58rem; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-top:3px; }
+  .inv-hdr-contact { text-align:right; font-size:0.68rem; color:rgba(255,255,255,0.7); line-height:1.8; }
+  .inv-meta { padding:1.5rem 2.5rem; display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--gold); }
+  .inv-to-lbl { font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:#aaa; margin-bottom:0.3rem; }
+  .inv-to-name { font-weight:700; font-size:1rem; color:#222; }
+  .inv-to-detail { font-size:0.76rem; color:#666; line-height:1.7; margin-top:0.2rem; }
+  .inv-num-block { text-align:right; }
+  .inv-num-lbl { font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:#aaa; margin-bottom:0.25rem; }
+  .inv-num-val { font-size:1.4rem; font-weight:700; color:var(--green); font-family:'Playfair Display',serif; }
+  .inv-dates-lbl { font-size:0.75rem; color:#666; margin-top:0.4rem; line-height:1.9; }
+  .inv-body { padding:1.5rem 2.5rem; }
+  .inv-tbl { width:100%; border-collapse:collapse; }
+  .inv-tbl th { font-size:0.62rem; letter-spacing:1.5px; text-transform:uppercase; color:white; background:var(--green); padding:0.6rem 0.8rem; text-align:left; }
+  .inv-tbl th:last-child { text-align:right; }
+  .inv-tbl td { padding:0.65rem 0.8rem; border-bottom:1px solid #f0f0f0; font-size:0.82rem; }
+  .inv-tbl tr:nth-child(even) td { background:#fafafa; }
+  .inv-tbl .td-r { text-align:right; font-weight:600; }
+  .inv-totals-wrap { padding:0 2.5rem 1.25rem; display:flex; justify-content:flex-end; }
+  .inv-totals-box { width:230px; }
+  .inv-total-line { display:flex; justify-content:space-between; font-size:0.8rem; padding:0.28rem 0; color:#555; }
+  .inv-total-line.grand { font-weight:700; font-size:1rem; color:var(--green); border-top:2px solid var(--gold); padding-top:0.5rem; margin-top:0.2rem; }
+  .inv-notes-wrap { padding:0 2.5rem 1rem; font-size:0.76rem; color:#555; }
+  .inv-notes-lbl { font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:#aaa; margin-bottom:0.25rem; }
+  .inv-ftr { background:var(--green); color:rgba(255,255,255,0.65); padding:0.9rem 2.5rem; display:flex; justify-content:space-between; align-items:center; font-size:0.68rem; }
+  .inv-ftr-thanks { font-family:'Playfair Display',serif; color:var(--gold); font-size:0.88rem; }
+  @media print {
+    body > *:not(#invoice-print-target) { display:none !important; }
+    #invoice-print-target { display:block !important; position:fixed; top:0; left:0; width:100%; z-index:9999; }
+    .inv-modal-actions { display:none !important; }
+  }
   </style>
 </head>
 <body>
@@ -237,6 +292,10 @@
       <div class="nav-item" onclick="showPage('email', this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
         Send Email
+      </div>
+      <div class="nav-item" onclick="showPage('invoices', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
+        Invoices
       </div>
     </nav>
     <div class="sidebar-bottom">
@@ -323,6 +382,86 @@
             <button class="btn-primary" onclick="sendEmail()" style="width:100%;text-align:center" id="send-email-btn">Open in Gmail</button>
             <p style="font-size:0.7rem;color:#aaa;margin-top:0.75rem;text-align:center">Opens Gmail pre-filled with your message — review and send from info@thompsonlawnsnow.ca.</p>
           </div>
+        </div>
+      </div>
+
+      <!-- INVOICES PAGE -->
+      <div class="page" id="page-invoices">
+        <div class="section-header">
+          <span class="section-title">Invoices</span>
+          <button class="add-job-btn" onclick="openNewInvoice()">+ New Invoice</button>
+        </div>
+
+        <!-- NEW INVOICE FORM -->
+        <div id="invoice-form-wrap" style="display:none;margin-bottom:1.5rem">
+          <div class="panel">
+            <div class="modal-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:0.5rem">
+                <div class="form-group">
+                  <label class="form-label">Client</label>
+                  <select class="form-select" id="inv-client" onchange="fillInvClient()">
+                    <option value="">Select client...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Invoice #</label>
+                  <input class="form-input" type="text" id="inv-number" placeholder="TLS-001" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Status</label>
+                  <select class="form-select" id="inv-status-select">
+                    <option value="unpaid">Unpaid</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Issue Date</label>
+                  <input class="form-input" type="date" id="inv-date" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Due Date</label>
+                  <input class="form-input" type="date" id="inv-due" />
+                </div>
+              </div>
+              <input type="hidden" id="inv-client-email" />
+              <input type="hidden" id="inv-client-phone" />
+              <input type="hidden" id="inv-client-addr" />
+
+              <label class="form-label" style="display:block;margin-bottom:0.4rem">Services / Line Items</label>
+              <table class="line-items-table">
+                <thead><tr>
+                  <th class="col-desc">Description</th>
+                  <th class="col-qty">Qty</th>
+                  <th class="col-rate">Rate ($)</th>
+                  <th class="col-total">Total</th>
+                  <th class="col-del"></th>
+                </tr></thead>
+                <tbody id="line-items-body"></tbody>
+              </table>
+              <button class="btn-sm btn-outline-sm" onclick="addLineItem()" style="margin-top:0.4rem;font-size:0.72rem">+ Add Line</button>
+
+              <div class="inv-totals" style="margin-top:1rem">
+                <div class="inv-totals-row"><span>Subtotal</span><span id="inv-subtotal">$0.00</span></div>
+                <div class="inv-totals-row"><span>GST (5%)</span><span id="inv-gst">$0.00</span></div>
+                <div class="inv-totals-row total-row"><span>Total</span><span id="inv-total">$0.00</span></div>
+              </div>
+
+              <div class="form-group" style="margin-top:1rem">
+                <label class="form-label">Notes (optional)</label>
+                <textarea class="form-textarea" id="inv-notes" placeholder="e.g. Payment due within 30 days. E-transfer to info@thompsonlawnsnow.ca" style="min-height:65px"></textarea>
+              </div>
+              <div style="display:flex;gap:0.75rem;margin-top:1rem;flex-wrap:wrap">
+                <button class="btn-primary" onclick="previewInvoice()">Preview &amp; Print</button>
+                <button class="btn-sm btn-green" onclick="saveInvoice()">Save Invoice</button>
+                <button class="btn-sm btn-outline-sm" onclick="cancelInvoiceForm()">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAVED INVOICES -->
+        <div class="panel" id="invoices-list-panel">
+          <div id="invoices-list-body"></div>
         </div>
       </div>
 
@@ -491,6 +630,20 @@
   </div>
 </div>
 
+<!-- INVOICE PREVIEW MODAL -->
+<div class="modal-overlay" id="invoice-preview-modal">
+  <div class="modal" style="max-width:760px;padding:0;overflow:hidden;border-radius:4px">
+    <div id="invoice-preview-content"></div>
+    <div class="inv-modal-actions" style="padding:0.9rem 1.5rem;display:flex;gap:0.75rem;background:#f9f9f9;border-top:1px solid #eee">
+      <button class="btn-primary" onclick="printInvoice()">Print / Save as PDF</button>
+      <button class="btn-sm btn-outline-sm" onclick="closeModal('invoice-preview-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICE PRINT TARGET (hidden until print) -->
+<div id="invoice-print-target" style="display:none"></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -573,7 +726,8 @@
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email' };
+    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices' };
+    if (name === 'invoices') renderInvoiceList();
     document.getElementById('page-title').textContent = titles[name] || name;
     if (name === 'calendar' && calendar) calendar.render();
   }
@@ -884,6 +1038,239 @@
 
   // ─── UTILS ────────────────────────────────────────────────────────
   function fmtDate(str) { if (!str) return ''; const d = new Date(str + 'T00:00:00'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  function fmt$(n) { return '$' + (n || 0).toFixed(2); }
+
+  // ─── INVOICES ─────────────────────────────────────────────────────
+  let invoices = JSON.parse(localStorage.getItem('tls_invoices') || '[]');
+  function saveInvoicesLS() { localStorage.setItem('tls_invoices', JSON.stringify(invoices)); }
+
+  function openNewInvoice() {
+    const wrap = document.getElementById('invoice-form-wrap');
+    wrap.style.display = 'block';
+    // Populate client dropdown
+    const sel = document.getElementById('inv-client');
+    sel.innerHTML = '<option value="">Select client...</option>' +
+      clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    // Auto invoice number
+    document.getElementById('inv-number').value = 'TLS-' + String(invoices.length + 1).padStart(3, '0');
+    // Default dates
+    const today = new Date();
+    document.getElementById('inv-date').value = today.toISOString().split('T')[0];
+    const due = new Date(today); due.setDate(due.getDate() + 30);
+    document.getElementById('inv-due').value = due.toISOString().split('T')[0];
+    document.getElementById('inv-client-email').value = '';
+    document.getElementById('inv-client-phone').value = '';
+    document.getElementById('inv-client-addr').value = '';
+    document.getElementById('inv-notes').value = '';
+    document.getElementById('line-items-body').innerHTML = '';
+    addLineItem();
+    wrap.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function cancelInvoiceForm() {
+    document.getElementById('invoice-form-wrap').style.display = 'none';
+  }
+
+  function fillInvClient() {
+    const id = document.getElementById('inv-client').value;
+    const c = clients.find(x => x.id === id);
+    if (c) {
+      document.getElementById('inv-client-email').value = c.email || '';
+      document.getElementById('inv-client-phone').value = c.phone || '';
+      document.getElementById('inv-client-addr').value = c.address || '';
+    }
+  }
+
+  function addLineItem(desc='', qty=1, rate='') {
+    const tbody = document.getElementById('line-items-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-desc"><input type="text" placeholder="e.g. Lawn Mowing" value="${desc}" oninput="calcInvoiceTotals()"></td>
+      <td class="col-qty"><input type="number" min="1" value="${qty}" oninput="calcInvoiceTotals()"></td>
+      <td class="col-rate"><input type="number" min="0" step="0.01" placeholder="0.00" value="${rate}" oninput="calcInvoiceTotals()"></td>
+      <td class="col-total">$0.00</td>
+      <td class="col-del"><button class="del-row-btn" onclick="this.closest('tr').remove();calcInvoiceTotals()">×</button></td>`;
+    tbody.appendChild(tr);
+    calcInvoiceTotals();
+  }
+
+  function calcInvoiceTotals() {
+    let sub = 0;
+    document.querySelectorAll('#line-items-body tr').forEach(row => {
+      const qty = parseFloat(row.cells[1].querySelector('input').value) || 0;
+      const rate = parseFloat(row.cells[2].querySelector('input').value) || 0;
+      const t = qty * rate;
+      row.cells[3].textContent = fmt$(t);
+      sub += t;
+    });
+    const gst = sub * 0.05;
+    document.getElementById('inv-subtotal').textContent = fmt$(sub);
+    document.getElementById('inv-gst').textContent = fmt$(gst);
+    document.getElementById('inv-total').textContent = fmt$(sub + gst);
+  }
+
+  function getInvoiceFormData() {
+    const clientId = document.getElementById('inv-client').value;
+    const clientName = document.getElementById('inv-client').selectedOptions[0]?.text || '';
+    const items = [];
+    document.querySelectorAll('#line-items-body tr').forEach(row => {
+      const desc = row.cells[0].querySelector('input').value.trim();
+      const qty = parseFloat(row.cells[1].querySelector('input').value) || 0;
+      const rate = parseFloat(row.cells[2].querySelector('input').value) || 0;
+      if (desc) items.push({ desc, qty, rate, total: qty * rate });
+    });
+    const sub = items.reduce((a, i) => a + i.total, 0);
+    const gst = sub * 0.05;
+    return {
+      id: Date.now().toString(),
+      number: document.getElementById('inv-number').value.trim(),
+      clientId, clientName,
+      clientEmail: document.getElementById('inv-client-email').value,
+      clientPhone: document.getElementById('inv-client-phone').value,
+      clientAddr: document.getElementById('inv-client-addr').value,
+      date: document.getElementById('inv-date').value,
+      due: document.getElementById('inv-due').value,
+      status: document.getElementById('inv-status-select').value,
+      notes: document.getElementById('inv-notes').value.trim(),
+      items, subtotal: sub, gst, total: sub + gst
+    };
+  }
+
+  function buildInvoiceHTML(inv) {
+    const rows = inv.items.map(i => `
+      <tr>
+        <td>${i.desc}</td>
+        <td>${i.qty}</td>
+        <td>${fmt$(i.rate)}</td>
+        <td class="td-r">${fmt$(i.total)}</td>
+      </tr>`).join('');
+    const notes = inv.notes ? `<div class="inv-notes-wrap"><div class="inv-notes-lbl">Notes</div><div>${inv.notes}</div></div>` : '';
+    return `
+      <div class="invoice-preview">
+        <div class="inv-hdr">
+          <div>
+            <div class="inv-hdr-logo">Thompson</div>
+            <div class="inv-hdr-sub">Lawn &amp; Snow Maintenance</div>
+          </div>
+          <div class="inv-hdr-contact">
+            Calgary, Alberta<br>
+            info@thompsonlawnsnow.ca<br>
+            thompsonlawnsnow.ca
+          </div>
+        </div>
+        <div class="inv-meta">
+          <div>
+            <div class="inv-to-lbl">Bill To</div>
+            <div class="inv-to-name">${inv.clientName}</div>
+            <div class="inv-to-detail">
+              ${inv.clientEmail ? inv.clientEmail + '<br>' : ''}
+              ${inv.clientPhone ? inv.clientPhone + '<br>' : ''}
+              ${inv.clientAddr || ''}
+            </div>
+          </div>
+          <div class="inv-num-block">
+            <div class="inv-num-lbl">Invoice</div>
+            <div class="inv-num-val">${inv.number}</div>
+            <div class="inv-dates-lbl">
+              <strong>Date:</strong> ${fmtDate(inv.date)}<br>
+              <strong>Due:</strong> ${fmtDate(inv.due)}
+            </div>
+          </div>
+        </div>
+        <div class="inv-body">
+          <table class="inv-tbl">
+            <thead><tr>
+              <th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${notes}
+        <div class="inv-totals-wrap">
+          <div class="inv-totals-box">
+            <div class="inv-total-line"><span>Subtotal</span><span>${fmt$(inv.subtotal)}</span></div>
+            <div class="inv-total-line"><span>GST (5%)</span><span>${fmt$(inv.gst)}</span></div>
+            <div class="inv-total-line grand"><span>Total</span><span>${fmt$(inv.total)}</span></div>
+          </div>
+        </div>
+        <div class="inv-ftr">
+          <div class="inv-ftr-thanks">Thank you for your business!</div>
+          <div>E-transfer: info@thompsonlawnsnow.ca</div>
+        </div>
+      </div>`;
+  }
+
+  function previewInvoice() {
+    const inv = getInvoiceFormData();
+    if (!inv.clientId) { showToast('Please select a client.'); return; }
+    if (inv.items.length === 0) { showToast('Add at least one line item.'); return; }
+    document.getElementById('invoice-preview-content').innerHTML = buildInvoiceHTML(inv);
+    document.getElementById('invoice-print-target').innerHTML = buildInvoiceHTML(inv);
+    openModal('invoice-preview-modal');
+  }
+
+  function viewInvoice(id) {
+    const inv = invoices.find(i => i.id === id);
+    if (!inv) return;
+    document.getElementById('invoice-preview-content').innerHTML = buildInvoiceHTML(inv);
+    document.getElementById('invoice-print-target').innerHTML = buildInvoiceHTML(inv);
+    openModal('invoice-preview-modal');
+  }
+
+  function printInvoice() {
+    document.getElementById('invoice-print-target').style.display = 'block';
+    window.print();
+    setTimeout(() => { document.getElementById('invoice-print-target').style.display = 'none'; }, 500);
+  }
+
+  function saveInvoice() {
+    const inv = getInvoiceFormData();
+    if (!inv.clientId) { showToast('Please select a client.'); return; }
+    if (inv.items.length === 0) { showToast('Add at least one line item.'); return; }
+    invoices.unshift(inv);
+    saveInvoicesLS();
+    renderInvoiceList();
+    cancelInvoiceForm();
+    showToast('Invoice saved!');
+  }
+
+  function toggleInvStatus(id) {
+    const inv = invoices.find(i => i.id === id);
+    if (!inv) return;
+    inv.status = inv.status === 'paid' ? 'unpaid' : 'paid';
+    saveInvoicesLS();
+    renderInvoiceList();
+  }
+
+  function deleteInvoice(id) {
+    if (!confirm('Delete this invoice?')) return;
+    invoices = invoices.filter(i => i.id !== id);
+    saveInvoicesLS();
+    renderInvoiceList();
+  }
+
+  function renderInvoiceList() {
+    const el = document.getElementById('invoices-list-body');
+    if (!el) return;
+    if (invoices.length === 0) {
+      el.innerHTML = '<div style="padding:1.5rem;color:#aaa;text-align:center;font-size:0.82rem">No invoices yet — click "+ New Invoice" to create one.</div>';
+      return;
+    }
+    el.innerHTML = invoices.map(inv => `
+      <div class="invoice-list-item">
+        <div>
+          <div class="inv-num">${inv.number}</div>
+          <div class="inv-client-lbl">${inv.clientName} &middot; Due ${fmtDate(inv.due)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+          <span class="inv-amount">${fmt$(inv.total)}</span>
+          <span class="inv-status ${inv.status}">${inv.status}</span>
+          <button class="btn-sm btn-outline-sm" onclick="viewInvoice('${inv.id}')">View</button>
+          <button class="btn-sm btn-outline-sm" onclick="toggleInvStatus('${inv.id}')">${inv.status === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}</button>
+          <button class="del-row-btn" onclick="deleteInvoice('${inv.id}')" title="Delete" style="font-size:1.3rem">×</button>
+        </div>
+      </div>`).join('');
+  }
 </script>
 
 </body>
