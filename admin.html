@@ -847,6 +847,7 @@
     initCalendar();
     updateNewBadge();
     syncFirestoreRequests();
+    syncFirestoreClients();
   }
 
   function sampleRequests() {
@@ -1005,10 +1006,13 @@
   }
 
   function requestCard(r) {
-    return `<div class="request-card" onclick="openRequest('${r.id}')">
+    return `<div class="request-card" onclick="openRequest('${r.id}')" style="position:relative">
+      <button onclick="event.stopPropagation();deleteRequest('${r.id}')" title="Delete request" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:rgba(180,60,60,0.5);padding:4px;line-height:1" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='rgba(180,60,60,0.5)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
       <div class="request-top">
         <div class="request-name">${r.name}</div>
-        <div style="text-align:right">
+        <div style="text-align:right;padding-right:20px">
           <div class="request-date">${fmtDate(r.date)}</div>
           <span class="status-badge status-${r.status}">${r.status}</span>
         </div>
@@ -1017,6 +1021,15 @@
       <div class="request-service">${r.service} · ${r.frequency}</div>
       ${r.message ? `<div class="request-msg">"${r.message}"</div>` : ''}
     </div>`;
+  }
+
+  function deleteRequest(id) {
+    if (!confirm('Delete this request?')) return;
+    requests = requests.filter(r => r.id !== id);
+    setData('tls_requests', requests);
+    if (db) { try { db.collection('requests').doc(id).delete(); } catch(e) {} }
+    updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter);
+    showToast('Request deleted.');
   }
 
   function isAlreadyClient(r) {
@@ -1091,6 +1104,7 @@
     const c = { id: 'c' + Date.now(), first, last, email: r.email, phone: r.phone, address: '', service: r.service, frequency: r.frequency, notes: r.message };
     clients.push(c);
     setData('tls_clients', clients);
+    if (db) { try { db.collection('clients').doc(c.id).set(c); } catch(e) {} }
     if (r.status === 'new') {
       r.status = 'contacted';
       setData('tls_requests', requests);
@@ -1201,6 +1215,7 @@
     const idx = clients.findIndex(c => c.id === id);
     if (idx >= 0) clients[idx] = c; else clients.push(c);
     setData('tls_clients', clients);
+    if (db) { try { db.collection('clients').doc(c.id).set(c); } catch(e) {} }
     closeModal('client-modal');
     updateStats();
     renderClients('');
@@ -1212,6 +1227,7 @@
     const id = document.getElementById('client-id').value;
     clients = clients.filter(c => c.id !== id);
     setData('tls_clients', clients);
+    if (db) { try { db.collection('clients').doc(id).delete(); } catch(e) {} }
     closeModal('client-modal');
     updateStats();
     renderClients('');
@@ -1711,6 +1727,32 @@
   // Fires immediately on login (catches up any missed submissions),
   // then stays live so new requests appear in real-time without refreshing.
   let _firstFirestoreSync = true;
+  function syncFirestoreClients() {
+    if (!db) return;
+    try {
+      db.collection('clients').get().then(snapshot => {
+        let changed = false;
+        snapshot.forEach(doc => {
+          if (!clients.find(c => c.id === doc.id)) {
+            clients.push({ ...doc.data(), id: doc.id });
+            changed = true;
+          } else {
+            const idx = clients.findIndex(c => c.id === doc.id);
+            clients[idx] = { ...doc.data(), id: doc.id };
+          }
+        });
+        if (changed || snapshot.size > 0) {
+          setData('tls_clients', clients);
+          renderClients('');
+          populateEmailTo();
+          updateStats();
+        }
+      });
+    } catch(err) {
+      console.warn('Firestore clients sync error:', err);
+    }
+  }
+
   function syncFirestoreRequests() {
     if (!db) return;
     try {
