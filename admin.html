@@ -628,7 +628,7 @@
     <div class="modal-body" id="request-modal-body"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('request-modal')">Close</button>
-      <button class="btn-primary" onclick="convertToClient()">Add as Client</button>
+      <button class="btn-primary" id="add-client-btn" onclick="convertToClient()">Add as Client</button>
       <button class="btn-primary" onclick="bookJobFromRequest()">Book Job</button>
       <button class="btn-green btn-sm" style="padding:10px 20px" onclick="replyToRequest()">Reply by Email</button>
     </div>
@@ -906,10 +906,10 @@
   }
 
   function renderDashboard() {
-    const recent = [...requests].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+    const recent = [...requests].filter(r => r.status === 'new').sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
     document.getElementById('dash-requests').innerHTML = recent.length
       ? recent.map(r => requestCard(r)).join('')
-      : '<div class="empty-state">No requests yet.</div>';
+      : '<div class="empty-state">No new requests.</div>';
   }
 
   function requestCard(r) {
@@ -925,6 +925,20 @@
       <div class="request-service">${r.service} · ${r.frequency}</div>
       ${r.message ? `<div class="request-msg">"${r.message}"</div>` : ''}
     </div>`;
+  }
+
+  function isAlreadyClient(r) {
+    const nameParts = r.name.split(' ');
+    const first = (nameParts[0] || '').toLowerCase();
+    const last = (nameParts.slice(1).join(' ') || '').toLowerCase();
+    const em = (r.email || '').toLowerCase();
+    const ph = (r.phone || '').replace(/\D/g, '');
+    return clients.some(c => {
+      if (em && (c.email || '').toLowerCase() === em) return true;
+      if (ph && (c.phone || '').replace(/\D/g, '') === ph) return true;
+      if ((c.first || '').toLowerCase() === first && (c.last || '').toLowerCase() === last) return true;
+      return false;
+    });
   }
 
   function openRequest(id) {
@@ -953,6 +967,16 @@
       </div>
       ${r.message ? `<div class="form-label">Message</div><div style="font-size:0.85rem;color:#555;line-height:1.7;font-style:italic">"${r.message}"</div>` : ''}
     `;
+    const addBtn = document.getElementById('add-client-btn');
+    if (isAlreadyClient(r)) {
+      addBtn.textContent = 'Already a Client';
+      addBtn.disabled = true;
+      addBtn.style.opacity = '0.45';
+    } else {
+      addBtn.textContent = 'Add as Client';
+      addBtn.disabled = false;
+      addBtn.style.opacity = '';
+    }
     openModal('request-modal');
   }
 
