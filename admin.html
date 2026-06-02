@@ -10,6 +10,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>emailjs.init('JwuxfnbRWCEgev_9N');</script>
   <style>
     :root {
       --green: #0b4a28;
@@ -1518,19 +1520,21 @@
     if (!_previewInvoice) return;
     const inv = _previewInvoice;
     if (!inv.clientEmail) { showToast('No email address on file for this client.'); return; }
-    const html = buildEmailHTML(inv);
+    const btn = document.querySelector('.inv-modal-actions .btn-primary[onclick="emailInvoice()"]');
+    if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
     try {
-      await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }) })]);
-    } catch(e) {
-      // fallback: copy plain text
-      await navigator.clipboard.writeText('Invoice ' + inv.number + ' for ' + inv.clientName + ' — Total: ' + fmt$(inv.total));
+      await emailjs.send('service_5y8xmz6', 'template_qgubxto', {
+        to_email: inv.clientEmail,
+        invoice_number: inv.number,
+        message: buildEmailHTML(inv)
+      });
+      showToast('Invoice sent to ' + inv.clientEmail + '!');
+    } catch(err) {
+      console.error('EmailJS error:', err);
+      showToast('Failed to send. Check your EmailJS setup.');
+    } finally {
+      if (btn) { btn.textContent = 'Send via Gmail'; btn.disabled = false; }
     }
-    const subject = 'Invoice ' + inv.number + ' — Thompson Lawn & Snow';
-    const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
-      '&to=' + encodeURIComponent(inv.clientEmail) +
-      '&su=' + encodeURIComponent(subject);
-    window.open(gmailUrl, '_blank');
-    showToast('Gmail opened — paste (Cmd+V) the template into the body');
   }
 
   function saveInvoice() {
