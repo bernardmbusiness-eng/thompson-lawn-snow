@@ -243,8 +243,11 @@
   .inv-total-line.grand { font-weight:700; font-size:1rem; color:var(--green); border-top:2px solid var(--gold); padding-top:0.5rem; margin-top:0.2rem; }
   .inv-notes-wrap { padding:0 2.5rem 1rem; font-size:0.76rem; color:#555; }
   .inv-notes-lbl { font-size:0.58rem; letter-spacing:2px; text-transform:uppercase; color:#aaa; margin-bottom:0.25rem; }
-  .inv-ftr { background:var(--green); color:rgba(255,255,255,0.65); padding:0.9rem 2.5rem; display:flex; justify-content:space-between; align-items:center; font-size:0.68rem; }
-  .inv-ftr-thanks { font-family:'Playfair Display',serif; color:var(--gold); font-size:0.88rem; }
+  .inv-ftr { background:var(--green); padding:2rem 2.5rem; text-align:center; }
+  .inv-ftr-thanks { font-family:'Playfair Display',serif; color:var(--gold); font-size:1.6rem; margin-bottom:1.1rem; letter-spacing:0.5px; }
+  .inv-ftr-pay-box { display:inline-block; border:1.5px solid var(--gold); border-radius:4px; padding:0.65rem 1.75rem; background:rgba(201,168,76,0.12); }
+  .inv-ftr-pay-lbl { font-size:0.55rem; letter-spacing:2.5px; text-transform:uppercase; color:var(--gold-muted,#a8894a); margin-bottom:0.3rem; }
+  .inv-ftr-pay-email { font-size:0.95rem; font-weight:700; color:var(--gold); }
   @media print {
     body > *:not(#invoice-print-target) { display:none !important; }
     #invoice-print-target { display:block !important; position:fixed; top:0; left:0; width:100%; z-index:9999; }
@@ -699,7 +702,7 @@
     <div id="invoice-preview-content"></div>
     <div class="inv-modal-actions" style="padding:0.9rem 1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;background:#f9f9f9;border-top:1px solid #eee">
       <button class="btn-primary" onclick="downloadInvoicePDF()">Download PDF</button>
-      <button class="btn-primary" onclick="emailInvoice()">Email to Client</button>
+      <button class="btn-primary" onclick="emailInvoice()">Send via Gmail</button>
       <button class="btn-sm btn-outline-sm" onclick="printInvoice()">Print</button>
       <button class="btn-sm btn-outline-sm" onclick="closeModal('invoice-preview-modal')">Close</button>
     </div>
@@ -1379,7 +1382,10 @@
         </div>
         <div class="inv-ftr">
           <div class="inv-ftr-thanks">Thank you for your business!</div>
-          <div>E-transfer: info@thompsonlawnsnow.ca</div>
+          <div class="inv-ftr-pay-box">
+            <div class="inv-ftr-pay-lbl">Payment via E-Transfer</div>
+            <div class="inv-ftr-pay-email">info@thompsonlawnsnow.ca</div>
+          </div>
         </div>
       </div>`;
   }
@@ -1424,33 +1430,48 @@
   function emailInvoice() {
     if (!_previewInvoice) return;
     const inv = _previewInvoice;
-    const lines = inv.items.map(i => '  ' + i.desc + ' x' + i.qty + ' @ ' + fmt$(i.rate) + ' = ' + fmt$(i.total)).join('\n');
+    if (!inv.clientEmail) { showToast('No email address on file for this client.'); return; }
+    const sep = '================================================';
+    const lines = inv.items.map(i => '  ' + i.desc + ' (x' + i.qty + ') ' + fmt$(i.total)).join('\n');
     const body = [
-      'Hi ' + inv.clientName + ',',
+      'Hi ' + inv.clientName.split(' ')[0] + ',',
       '',
-      'Please see your invoice details below.',
+      'Please find your invoice from Thompson Lawn & Snow below.',
       '',
-      'Invoice #: ' + inv.number,
-      'Date: ' + fmtDate(inv.date),
-      'Due: ' + fmtDate(inv.due),
+      sep,
+      'INVOICE #' + inv.number,
+      'Date: ' + fmtDate(inv.date) + '   |   Due: ' + fmtDate(inv.due),
+      sep,
       '',
-      'Items:',
+      'SERVICES',
       lines,
       '',
-      'Subtotal: ' + fmt$(inv.subtotal),
-      'GST (5%): ' + fmt$(inv.gst),
-      'Total: ' + fmt$(inv.total),
+      sep,
+      'Subtotal:   ' + fmt$(inv.subtotal),
+      'GST (5%):   ' + fmt$(inv.gst),
+      'TOTAL DUE:  ' + fmt$(inv.total),
+      sep,
       '',
-      'Payment via E-transfer to: info@thompsonlawnsnow.ca',
+      'PAYMENT',
+      'Please send payment by E-Transfer to:',
+      '   info@thompsonlawnsnow.ca',
       '',
-      'Thank you for your business!',
+      inv.notes ? 'Note: ' + inv.notes + '\n' : '',
+      sep,
+      '',
+      'Thank you for your business — we truly appreciate it!',
       '',
       'Thompson Lawn & Snow Maintenance',
-      'info@thompsonlawnsnow.ca',
-      'thompsonlawnsnow.ca'
+      'Calgary, Alberta',
+      'info@thompsonlawnsnow.ca | thompsonlawnsnow.ca',
     ].join('\n');
-    const subject = encodeURIComponent('Invoice ' + inv.number + ' — Thompson Lawn & Snow');
-    window.open('mailto:' + (inv.clientEmail || '') + '?subject=' + subject + '&body=' + encodeURIComponent(body));
+    const subject = 'Invoice ' + inv.number + ' — Thompson Lawn & Snow';
+    const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+      '&to=' + encodeURIComponent(inv.clientEmail) +
+      '&su=' + encodeURIComponent(subject) +
+      '&body=' + encodeURIComponent(body);
+    window.open(gmailUrl, '_blank');
+    showToast('Opening Gmail — send from info@thompsonlawnsnow.ca');
   }
 
   function saveInvoice() {
