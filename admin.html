@@ -965,7 +965,14 @@
     if (!activeRequest) return;
     const r = activeRequest;
     const nameParts = r.name.split(' ');
-    const c = { id: 'c' + Date.now(), first: nameParts[0] || '', last: nameParts.slice(1).join(' ') || '', email: r.email, phone: r.phone, address: '', service: r.service, frequency: r.frequency, notes: r.message };
+    const first = nameParts[0] || '';
+    const last = nameParts.slice(1).join(' ') || '';
+    const dup = findDuplicateClient(first, last, r.email, r.phone, null);
+    if (dup) {
+      showToast('A client with that name, email, or phone already exists.');
+      return;
+    }
+    const c = { id: 'c' + Date.now(), first, last, email: r.email, phone: r.phone, address: '', service: r.service, frequency: r.frequency, notes: r.message };
     clients.push(c);
     setData('tls_clients', clients);
     if (r.status === 'new') {
@@ -1043,9 +1050,38 @@
     openModal('client-modal');
   }
 
+  function findDuplicateClient(first, last, email, phone, excludeId) {
+    const fullName = (first + ' ' + last).trim().toLowerCase();
+    const lastName = last.trim().toLowerCase();
+    const em = (email || '').trim().toLowerCase();
+    const ph = (phone || '').replace(/\D/g, '');
+    return clients.find(c => {
+      if (c.id === excludeId) return false;
+      const cName = (c.first + ' ' + c.last).trim().toLowerCase();
+      const cLast = (c.last || '').trim().toLowerCase();
+      const cEm = (c.email || '').trim().toLowerCase();
+      const cPh = (c.phone || '').replace(/\D/g, '');
+      if (fullName && cName === fullName) return true;
+      if (lastName && cLast === lastName) return true;
+      if (em && cEm && cEm === em) return true;
+      if (ph && cPh && cPh === ph) return true;
+      return false;
+    });
+  }
+
   function saveClient() {
     const id = document.getElementById('client-id').value || 'c' + Date.now();
-    const c = { id, first: document.getElementById('client-first').value, last: document.getElementById('client-last').value, email: document.getElementById('client-email').value, phone: document.getElementById('client-phone').value, address: document.getElementById('client-address').value, service: document.getElementById('client-service').value, frequency: document.getElementById('client-frequency').value, notes: document.getElementById('client-notes').value };
+    const first = document.getElementById('client-first').value.trim();
+    const last = document.getElementById('client-last').value.trim();
+    const email = document.getElementById('client-email').value.trim();
+    const phone = document.getElementById('client-phone').value.trim();
+    const existingId = document.getElementById('client-id').value;
+    const dup = findDuplicateClient(first, last, email, phone, existingId);
+    if (dup) {
+      showToast('A client with that name, email, or phone already exists.');
+      return;
+    }
+    const c = { id, first, last, email, phone, address: document.getElementById('client-address').value, service: document.getElementById('client-service').value, frequency: document.getElementById('client-frequency').value, notes: document.getElementById('client-notes').value };
     const idx = clients.findIndex(c => c.id === id);
     if (idx >= 0) clients[idx] = c; else clients.push(c);
     setData('tls_clients', clients);
