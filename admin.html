@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --green: #0b4a28;
@@ -695,8 +696,10 @@
 <div class="modal-overlay" id="invoice-preview-modal">
   <div class="modal" style="max-width:760px;padding:0;overflow:hidden;border-radius:4px">
     <div id="invoice-preview-content"></div>
-    <div class="inv-modal-actions" style="padding:0.9rem 1.5rem;display:flex;gap:0.75rem;background:#f9f9f9;border-top:1px solid #eee">
-      <button class="btn-primary" onclick="printInvoice()">Print / Save as PDF</button>
+    <div class="inv-modal-actions" style="padding:0.9rem 1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;background:#f9f9f9;border-top:1px solid #eee">
+      <button class="btn-primary" onclick="downloadInvoicePDF()">Download PDF</button>
+      <button class="btn-primary" onclick="emailInvoice()">Email to Client</button>
+      <button class="btn-sm btn-outline-sm" onclick="printInvoice()">Print</button>
       <button class="btn-sm btn-outline-sm" onclick="closeModal('invoice-preview-modal')">Close</button>
     </div>
   </div>
@@ -739,6 +742,7 @@
   let requests = [];
   let calendar;
   let activeRequest = null;
+  let _previewInvoice = null;
 
   // ─── INIT ─────────────────────────────────────────────────────────
   function initApp() {
@@ -1301,6 +1305,7 @@
     const inv = getInvoiceFormData();
     if (!inv.clientId) { showToast('Please select a client.'); return; }
     if (inv.items.length === 0) { showToast('Add at least one line item.'); return; }
+    _previewInvoice = inv;
     document.getElementById('invoice-preview-content').innerHTML = buildInvoiceHTML(inv);
     document.getElementById('invoice-print-target').innerHTML = buildInvoiceHTML(inv);
     openModal('invoice-preview-modal');
@@ -1309,6 +1314,7 @@
   function viewInvoice(id) {
     const inv = invoices.find(i => i.id === id);
     if (!inv) return;
+    _previewInvoice = inv;
     document.getElementById('invoice-preview-content').innerHTML = buildInvoiceHTML(inv);
     document.getElementById('invoice-print-target').innerHTML = buildInvoiceHTML(inv);
     openModal('invoice-preview-modal');
@@ -1318,6 +1324,50 @@
     document.getElementById('invoice-print-target').style.display = 'block';
     window.print();
     setTimeout(() => { document.getElementById('invoice-print-target').style.display = 'none'; }, 500);
+  }
+
+  function downloadInvoicePDF() {
+    if (!_previewInvoice) return;
+    const el = document.getElementById('invoice-preview-content');
+    html2pdf().set({
+      margin: 0.4,
+      filename: 'Invoice-' + _previewInvoice.number + '.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    }).from(el).save();
+  }
+
+  function emailInvoice() {
+    if (!_previewInvoice) return;
+    const inv = _previewInvoice;
+    const lines = inv.items.map(i => '  ' + i.desc + ' x' + i.qty + ' @ ' + fmt$(i.rate) + ' = ' + fmt$(i.total)).join('\n');
+    const body = [
+      'Hi ' + inv.clientName + ',',
+      '',
+      'Please see your invoice details below.',
+      '',
+      'Invoice #: ' + inv.number,
+      'Date: ' + fmtDate(inv.date),
+      'Due: ' + fmtDate(inv.due),
+      '',
+      'Items:',
+      lines,
+      '',
+      'Subtotal: ' + fmt$(inv.subtotal),
+      'GST (5%): ' + fmt$(inv.gst),
+      'Total: ' + fmt$(inv.total),
+      '',
+      'Payment via E-transfer to: info@thompsonlawnsnow.ca',
+      '',
+      'Thank you for your business!',
+      '',
+      'Thompson Lawn & Snow Maintenance',
+      'info@thompsonlawnsnow.ca',
+      'thompsonlawnsnow.ca'
+    ].join('\n');
+    const subject = encodeURIComponent('Invoice ' + inv.number + ' — Thompson Lawn & Snow');
+    window.open('mailto:' + (inv.clientEmail || '') + '?subject=' + subject + '&body=' + encodeURIComponent(body));
   }
 
   function saveInvoice() {
