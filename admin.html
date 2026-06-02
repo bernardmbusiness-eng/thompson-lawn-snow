@@ -1530,8 +1530,8 @@
       });
       showToast('Invoice sent to ' + inv.clientEmail + '!');
     } catch(err) {
-      console.error('EmailJS error:', err);
-      showToast('Failed to send. Check your EmailJS setup.');
+      const msg = err && (err.text || err.message || JSON.stringify(err));
+      showToast('Error: ' + msg);
     } finally {
       if (btn) { btn.textContent = 'Send via Gmail'; btn.disabled = false; }
     }
