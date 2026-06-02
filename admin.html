@@ -1527,7 +1527,7 @@
     const btn = document.querySelector('.inv-modal-actions .btn-primary[onclick="emailInvoice()"]');
     if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
     try {
-      await emailjs.send('service_5y8xmz6', 'template_qgubxto', {
+      await emailjs.send('service_5y8xmz6', 'template_8eq3rnh', {
         to_email: toEmail,
         invoice_number: inv.number,
         message: buildEmailHTML(inv)
