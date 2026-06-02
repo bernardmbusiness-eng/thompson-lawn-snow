@@ -1519,16 +1519,20 @@
   async function emailInvoice() {
     if (!_previewInvoice) return;
     const inv = _previewInvoice;
-    if (!inv.clientEmail) { showToast('No email address on file for this client.'); return; }
+    const toEmail = (inv.clientEmail || '').trim();
+    if (!toEmail || !toEmail.includes('@')) {
+      showToast('No valid email for this client — open their client profile and add their email first.');
+      return;
+    }
     const btn = document.querySelector('.inv-modal-actions .btn-primary[onclick="emailInvoice()"]');
     if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
     try {
       await emailjs.send('service_5y8xmz6', 'template_qgubxto', {
-        to_email: inv.clientEmail,
+        to_email: toEmail,
         invoice_number: inv.number,
         message: buildEmailHTML(inv)
       });
-      showToast('Invoice sent to ' + inv.clientEmail + '!');
+      showToast('Invoice sent to ' + toEmail + '!');
     } catch(err) {
       const msg = err && (err.text || err.message || JSON.stringify(err));
       showToast('Error: ' + msg);
