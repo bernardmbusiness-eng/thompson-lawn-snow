@@ -628,7 +628,8 @@
     <div class="modal-body" id="request-modal-body"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('request-modal')">Close</button>
-      <button class="btn-primary" onclick="convertToClient()">Convert to Client</button>
+      <button class="btn-primary" onclick="convertToClient()">Add as Client</button>
+      <button class="btn-primary" onclick="bookJobFromRequest()">Book Job</button>
       <button class="btn-green btn-sm" style="padding:10px 20px" onclick="replyToRequest()">Reply by Email</button>
     </div>
   </div>
@@ -967,11 +968,33 @@
     const c = { id: 'c' + Date.now(), first: nameParts[0] || '', last: nameParts.slice(1).join(' ') || '', email: r.email, phone: r.phone, address: '', service: r.service, frequency: r.frequency, notes: r.message };
     clients.push(c);
     setData('tls_clients', clients);
-    updateStats();
+    if (r.status === 'new') {
+      r.status = 'contacted';
+      setData('tls_requests', requests);
+    }
+    updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter);
     renderClients('');
     populateEmailTo();
     closeModal('request-modal');
     showToast(r.name + ' added as client!');
+  }
+
+  function bookJobFromRequest() {
+    if (!activeRequest) return;
+    const r = activeRequest;
+    if (r.status === 'new' || r.status === 'contacted') {
+      r.status = 'booked';
+      setData('tls_requests', requests);
+      updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter);
+    }
+    closeModal('request-modal');
+    openJobModal(null);
+    document.getElementById('job-client').value = r.name;
+    document.getElementById('job-phone').value = r.phone || '';
+    document.getElementById('job-email').value = r.email || '';
+    document.getElementById('job-service').value = r.service || 'Lawn Mowing — Small';
+    document.getElementById('job-status').value = 'booked';
+    document.getElementById('job-notes').value = r.message || '';
   }
 
   function replyToRequest() {
