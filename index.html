@@ -798,42 +798,134 @@
       letter-spacing: 1px;
     }
 
+    /* ─── HAMBURGER ─── */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--gold);
+      transition: all 0.25s;
+      border-radius: 2px;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
     /* ─── RESPONSIVE ─── */
     @media (max-width: 768px) {
+
+      /* Nav */
+      .nav-hamburger { display: flex; }
       nav ul {
-        gap: 1.5rem;
-      }
-
-      nav ul li:nth-child(n+3) {
         display: none;
-      }
-
-      #about,
-      #contact {
+        position: fixed;
+        top: 68px; left: 0; right: 0;
+        background: rgba(5, 40, 22, 0.99);
         flex-direction: column;
+        gap: 0;
+        padding: 0;
+        border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
       }
+      nav ul.open { display: flex; }
+      nav ul li { border-bottom: 1px solid rgba(255,255,255,0.05); }
+      nav ul li:nth-child(n+3) { display: list-item; }
+      nav ul a {
+        display: block;
+        padding: 1rem 1.5rem;
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+      }
+      nav ul a:active { background: rgba(201,168,76,0.08); }
 
-      .form-row {
+      /* Sections */
+      section { padding: 56px 5%; }
+      #hero { padding: 90px 5% 56px; min-height: auto; }
+
+      /* Hero */
+      .hero-tagline { font-size: 0.88rem; margin-top: 1.5rem; }
+      .hero-cta { flex-direction: column; align-items: center; gap: 0.75rem; }
+      .hero-cta a { width: 100%; max-width: 300px; text-align: center; padding: 15px 20px; }
+
+      /* About */
+      #about { flex-direction: column; }
+      .about-stats { width: 100%; min-width: 0; }
+      .about-text { min-width: 0; }
+
+      /* Services: single column, full-width cards */
+      .services-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-top: 2rem;
       }
+      .service-card { padding: 1.75rem 1.5rem; }
 
-      .pricing-tabs {
-        width: 100%;
+      /* Pricing */
+      .pricing-tabs { width: 100%; }
+      .tab-btn { flex: 1; padding: 12px 12px; font-size: 0.65rem; }
+
+      /* Pricing table → card layout */
+      .pricing-table { font-size: 0.85rem; }
+      .pricing-table thead { display: none; }
+      .pricing-table tbody tr {
+        display: block;
+        border: 1px solid #ddd;
+        margin-bottom: 1rem;
+        padding: 1rem 1.25rem;
+        background: white;
       }
-
-      .tab-btn {
-        flex: 1;
-        padding: 12px 16px;
-      }
-
-      .pricing-table {
-        font-size: 0.8rem;
-      }
-
-      .pricing-table th,
+      .pricing-table tbody tr:hover { background: white; }
       .pricing-table td {
-        padding: 0.8rem 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid #f3f0e8;
       }
+      .pricing-table td:last-child { border-bottom: none; }
+      .pricing-table td:first-child {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--green-dark);
+        padding-bottom: 0.6rem;
+        margin-bottom: 0.25rem;
+        border-bottom: 2px solid var(--green-dark);
+        display: block;
+      }
+      .pricing-table td:nth-child(2)::before { content: "One-Time  "; font-size: 0.62rem; letter-spacing: 1px; text-transform: uppercase; color: #888; font-weight: 600; }
+      .pricing-table td:nth-child(3)::before { content: "Biweekly  "; font-size: 0.62rem; letter-spacing: 1px; text-transform: uppercase; color: #888; font-weight: 600; }
+      .pricing-table td:nth-child(4)::before { content: "Monthly  "; font-size: 0.62rem; letter-spacing: 1px; text-transform: uppercase; color: #888; font-weight: 600; }
+
+      /* Snow cards */
+      .snow-cards { grid-template-columns: 1fr; }
+      .snow-card { padding: 1.75rem 1.5rem; }
+
+      /* Before/After */
+      .ba-grid { grid-template-columns: 1fr; }
+      .ba-pair { grid-template-columns: 1fr 1fr; }
+      .ba-img-wrap img { height: 160px; }
+
+      /* Why grid */
+      .why-grid { grid-template-columns: 1fr 1fr; gap: 0; }
+      .why-item { padding: 1.5rem 1rem; }
+
+      /* Contact */
+      #contact { flex-direction: column; }
+      .contact-info { min-width: 0; }
+      .contact-form { min-width: 0; }
+      .form-row { grid-template-columns: 1fr; }
+
+      /* Footer */
+      footer { padding: 2.5rem 5%; }
     }
   </style>
 </head>
@@ -845,12 +937,15 @@
       Thompson
       <span>Lawn &amp; Snow Maintenance</span>
     </div>
-    <ul>
-      <li><a href="#about">About</a></li>
-      <li><a href="#services">Services</a></li>
-      <li><a href="#pricing">Pricing</a></li>
-      <li><a href="#contact">Contact</a></li>
+    <ul id="nav-menu">
+      <li><a href="#about" onclick="closeNav()">About</a></li>
+      <li><a href="#services" onclick="closeNav()">Services</a></li>
+      <li><a href="#pricing" onclick="closeNav()">Pricing</a></li>
+      <li><a href="#contact" onclick="closeNav()">Contact</a></li>
     </ul>
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNav()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
 
   <!-- HERO -->
@@ -1195,6 +1290,19 @@
   </footer>
 
   <script>
+    function toggleNav() {
+      const menu = document.getElementById('nav-menu');
+      const btn = document.getElementById('nav-hamburger');
+      menu.classList.toggle('open');
+      btn.classList.toggle('open');
+    }
+    function closeNav() {
+      document.getElementById('nav-menu').classList.remove('open');
+      document.getElementById('nav-hamburger').classList.remove('open');
+    }
+    // Close nav when scrolling
+    window.addEventListener('scroll', closeNav, { passive: true });
+
     function showTab(tabName, btn) {
       document.querySelectorAll('.pricing-panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
