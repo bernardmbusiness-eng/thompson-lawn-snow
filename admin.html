@@ -580,7 +580,11 @@
         <div class="panel">
           <div class="section-header" style="margin-bottom:1rem">
             <span class="section-title">Expense Tracker</span>
-            <span id="expense-profit-badge" style="font-size:0.75rem;font-weight:700;padding:4px 10px;border-radius:3px;background:#f0faf4;color:#0b4a28;border:1px solid #c3e6cb"></span>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <span id="expense-profit-badge" style="font-size:0.75rem;font-weight:700;padding:4px 10px;border-radius:3px;background:#f0faf4;color:#0b4a28;border:1px solid #c3e6cb"></span>
+              <button class="btn-sm btn-outline-sm" onclick="printExpenses()">Print</button>
+              <button class="btn-sm btn-green" onclick="exportExpensesPDF()">Save PDF</button>
+            </div>
           </div>
           <div class="modal-body" style="padding-bottom:0">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.75rem;align-items:end">
@@ -767,6 +771,10 @@
         <div class="form-group">
           <label class="form-label">Time</label>
           <input class="form-input" type="time" id="job-time" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration (min)</label>
+          <input class="form-input" type="number" id="job-duration" placeholder="60" min="15" step="15" />
         </div>
       </div>
       <div class="form-row">
@@ -1096,10 +1104,12 @@
     const events = [];
     jobs.forEach(j => {
       if (!j.date) return;
+      const dur = j.duration || 60;
       const base = {
         id: j.id,
         title: (j.client || 'Job') + ' — ' + (j.service || ''),
         start: j.date + (j.time ? 'T' + j.time : ''),
+        end: j.time ? new Date(new Date(`${j.date}T${j.time}`).getTime() + dur*60000).toISOString() : undefined,
         classNames: ['status-' + (j.status || 'new')],
         extendedProps: j,
       };
@@ -1127,9 +1137,15 @@
   }
 
   function updateJobDate(event) {
-    const j = jobs.find(j => j.id === event.id);
+    const realId = event.id.includes('_r') ? event.id.split('_r')[0] : event.id;
+    const j = jobs.find(j => j.id === realId);
     if (j) {
       j.date = event.startStr.split('T')[0];
+      if (event.startStr.includes('T')) j.time = event.startStr.split('T')[1].slice(0, 5);
+      if (event.endStr && event.startStr.includes('T')) {
+        const ms = new Date(event.endStr) - new Date(event.startStr);
+        j.duration = Math.round(ms / 60000);
+      }
       setData('tls_jobs', jobs);
       showToast('Job rescheduled!');
     }
@@ -1154,6 +1170,7 @@
     document.getElementById('job-date').value = j ? j.date : '';
     document.getElementById('job-time').value = j ? j.time : '';
     document.getElementById('job-notes').value = j ? j.notes : '';
+    document.getElementById('job-duration').value = j ? (j.duration || '') : '';
     document.getElementById('job-recurring').value = j ? (j.recurring || 'none') : 'none';
     document.getElementById('job-recurring-end').value = j ? (j.recurringEnd || '') : '';
     document.getElementById('job-completion-notes').value = j ? (j.completionNotes || '') : '';
@@ -1161,6 +1178,20 @@
     renderJobPhotosPreview(j ? (j.photos || '') : '');
     document.getElementById('delete-job-btn').style.display = j ? 'inline-block' : 'none';
     openModal('job-modal');
+  }
+
+  function checkOverlap(job) {
+    if (!job.time) return null;
+    const dur = job.duration || 60;
+    const start = new Date(`${job.date}T${job.time}`);
+    const end = new Date(start.getTime() + dur * 60000);
+    return jobs.find(j => {
+      if (j.id === job.id || j.date !== job.date || !j.time) return false;
+      const jDur = j.duration || 60;
+      const jStart = new Date(`${j.date}T${j.time}`);
+      const jEnd = new Date(jStart.getTime() + jDur * 60000);
+      return start < jEnd && end > jStart;
+    });
   }
 
   function saveJob() {
@@ -1175,12 +1206,18 @@
       status: document.getElementById('job-status').value,
       date: document.getElementById('job-date').value,
       time: document.getElementById('job-time').value,
+      duration: parseInt(document.getElementById('job-duration').value) || 60,
       notes: document.getElementById('job-notes').value,
       recurring: document.getElementById('job-recurring').value,
       recurringEnd: document.getElementById('job-recurring-end').value,
       completionNotes: document.getElementById('job-completion-notes').value,
       photos: document.getElementById('job-photos-data').value,
     };
+    const conflict = checkOverlap(job);
+    if (conflict) {
+      showToast(`⚠ Overlap with ${conflict.client || 'another job'} at ${conflict.time} — adjust the time or duration.`);
+      return;
+    }
     const idx = jobs.findIndex(j => j.id === id);
     if (idx >= 0) jobs[idx] = job; else jobs.push(job);
     setData('tls_jobs', jobs);
@@ -2045,6 +2082,61 @@
     localStorage.setItem('tls_expenses', JSON.stringify(expenses));
     renderExpenses();
     renderReports();
+  }
+
+  function buildExpenseTableHTML() {
+    const total = expenses.reduce((s,e) => s + (e.amount||0), 0);
+    const rows = expenses.map(e => `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px">${fmtDate(e.date)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px">${e.category}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px">${e.desc || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;text-align:right;font-weight:600">${fmt$(e.amount)}</td>
+    </tr>`).join('');
+    return `<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:32px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#0b4a28;letter-spacing:2px;text-transform:uppercase">Thompson Lawn & Snow</div>
+          <div style="font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:2px">Expense Report</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#666">Generated: ${new Date().toLocaleDateString('en-CA',{year:'numeric',month:'long',day:'numeric'})}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e0d9cc">
+        <thead><tr style="background:#0b4a28">
+          <th style="padding:10px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-align:left">Date</th>
+          <th style="padding:10px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-align:left">Category</th>
+          <th style="padding:10px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-align:left">Description</th>
+          <th style="padding:10px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-align:right">Amount</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr style="background:#f5f0e8">
+          <td colspan="3" style="padding:10px 12px;font-size:13px;font-weight:700;color:#0b4a28;text-align:right;border-top:2px solid #c9a84c">Total Expenses</td>
+          <td style="padding:10px 12px;font-size:15px;font-weight:700;color:#0b4a28;text-align:right;border-top:2px solid #c9a84c">${fmt$(total)}</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+  }
+
+  function printExpenses() {
+    if (!expenses.length) { showToast('No expenses to print.'); return; }
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>Expense Report</title></head><body>' + buildExpenseTableHTML() + '</body></html>');
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
+  function exportExpensesPDF() {
+    if (!expenses.length) { showToast('No expenses to export.'); return; }
+    const div = document.createElement('div');
+    div.innerHTML = buildExpenseTableHTML();
+    document.body.appendChild(div);
+    html2pdf().set({
+      margin: 0.5,
+      filename: 'Thompson-Expenses-' + new Date().toISOString().slice(0,10) + '.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    }).from(div).save().then(() => document.body.removeChild(div));
   }
 
   function renderExpenses() {
