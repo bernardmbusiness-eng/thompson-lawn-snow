@@ -2018,7 +2018,8 @@
         if (cur.toISOString().split('T')[0] === date) extra.push(j);
       }
     });
-    const all = [...dayJobs, ...extra.filter(j => !dayJobs.find(d => d.id === j.id))];
+    const all = [...dayJobs, ...extra.filter(j => !dayJobs.find(d => d.id === j.id))]
+      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     const el = document.getElementById('route-jobs-list');
     const btn = document.getElementById('route-open-btn');
     const optBtn = document.getElementById('route-optimise-btn');
@@ -2046,7 +2047,9 @@
 
   function openRouteInMaps(optimise) {
     const date = document.getElementById('route-date').value;
-    const dayJobs = jobs.filter(j => j.date === date && j.address);
+    const dayJobs = jobs
+      .filter(j => j.date === date && j.address)
+      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     if (!dayJobs.length) return;
     const addrs = dayJobs.map(j => encodeURIComponent(j.address));
     const origin = addrs[0];
