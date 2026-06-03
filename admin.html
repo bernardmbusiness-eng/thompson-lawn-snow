@@ -272,6 +272,9 @@
     .inv-modal-actions { display:none !important; }
   }
 
+  /* ─── RECURRING EVENT INDICATOR ─── */
+  .recurring-event::after { content:'↻'; font-size:9px; margin-left:3px; opacity:0.7; }
+
   /* ─── MOBILE NAV ─── */
   .mobile-nav { display:none; }
 
@@ -372,6 +375,10 @@
       <div class="nav-item" onclick="showPage('reports', this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
         Reports
+      </div>
+      <div class="nav-item" onclick="showPage('route', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg></span>
+        Route Planner
       </div>
       <div class="nav-item" onclick="openPropertyMapper()">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></span>
@@ -565,9 +572,66 @@
             <div id="report-top-clients"></div>
           </div>
         </div>
-        <div class="panel">
+        <div class="panel" style="margin-bottom:1.5rem">
           <div class="section-header" style="margin-bottom:1rem"><span class="section-title">Follow-ups Due</span></div>
           <div id="report-followups"></div>
+        </div>
+        <!-- EXPENSE TRACKER -->
+        <div class="panel">
+          <div class="section-header" style="margin-bottom:1rem">
+            <span class="section-title">Expense Tracker</span>
+            <span id="expense-profit-badge" style="font-size:0.75rem;font-weight:700;padding:4px 10px;border-radius:3px;background:#f0faf4;color:#0b4a28;border:1px solid #c3e6cb"></span>
+          </div>
+          <div class="modal-body" style="padding-bottom:0">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.75rem;align-items:end">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Date</label>
+                <input class="form-input" type="date" id="exp-date" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="exp-category">
+                  <option>Fuel</option>
+                  <option>Equipment</option>
+                  <option>Supplies</option>
+                  <option>Insurance</option>
+                  <option>Marketing</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Amount ($)</label>
+                <input class="form-input" type="number" id="exp-amount" placeholder="0.00" step="0.01" min="0" />
+              </div>
+              <button class="btn-sm btn-green" onclick="addExpense()" style="height:38px">+ Add</button>
+            </div>
+            <div class="form-group" style="margin-top:0.75rem">
+              <label class="form-label">Description</label>
+              <input class="form-input" type="text" id="exp-desc" placeholder="e.g. Gas for truck" />
+            </div>
+          </div>
+          <div id="expense-list" style="padding:0 1rem 1rem"></div>
+        </div>
+      </div>
+
+      <!-- ROUTE PLANNER PAGE -->
+      <div class="page" id="page-route">
+        <div class="section-header" style="margin-bottom:1.5rem">
+          <span class="section-title">Route Planner</span>
+        </div>
+        <div class="panel" style="max-width:640px">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Select Date</label>
+              <input class="form-input" type="date" id="route-date" onchange="buildRouteList()" />
+            </div>
+            <div id="route-jobs-list" style="margin:1rem 0;min-height:40px"></div>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+              <button class="btn-primary" onclick="openRouteInMaps()" id="route-open-btn" style="display:none">Open Route in Google Maps</button>
+              <button class="btn-sm btn-outline-sm" onclick="openRouteInMaps(true)" id="route-optimise-btn" style="display:none">Optimised Route</button>
+            </div>
+            <p id="route-hint" style="font-size:0.72rem;color:#aaa;margin-top:0.75rem">Pick a date to see jobs scheduled for that day.</p>
+          </div>
         </div>
       </div>
 
@@ -630,6 +694,10 @@
     <button class="mobile-nav-item" id="mnav-invoices" onclick="showPage('invoices',this);setMobileNav(this)">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Invoices
+    </button>
+    <button class="mobile-nav-item" id="mnav-route" onclick="showPage('route',this);setMobileNav(this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+      Route
     </button>
     <button class="mobile-nav-item" id="mnav-reports" onclick="showPage('reports',this);setMobileNav(this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -701,9 +769,34 @@
           <input class="form-input" type="time" id="job-time" />
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Recurring</label>
+          <select class="form-select" id="job-recurring">
+            <option value="none">One-time</option>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Every 2 Weeks</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Recurring End Date</label>
+          <input class="form-input" type="date" id="job-recurring-end" />
+        </div>
+      </div>
       <div class="form-group">
         <label class="form-label">Notes</label>
         <textarea class="form-textarea" id="job-notes" placeholder="Any special notes..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Completion Notes</label>
+        <textarea class="form-textarea" id="job-completion-notes" placeholder="Notes after job is done..." style="min-height:55px"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Job Photos (up to 3)</label>
+        <input type="file" id="job-photos-input" accept="image/*" multiple style="font-size:0.8rem;color:#555" onchange="handleJobPhotos(this)" />
+        <div id="job-photos-preview" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem"></div>
+        <input type="hidden" id="job-photos-data" />
       </div>
     </div>
     <div class="modal-footer">
@@ -971,9 +1064,13 @@
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices', reports: 'Reports', mapper: 'Yard Mapper' };
+    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices', reports: 'Reports', mapper: 'Yard Mapper', route: 'Route Planner' };
     if (name === 'invoices') renderInvoiceList();
     if (name === 'reports') renderReports();
+    if (name === 'route') {
+      const rd = document.getElementById('route-date');
+      if (rd && !rd.value) { rd.value = new Date().toISOString().split('T')[0]; buildRouteList(); }
+    }
     document.getElementById('page-title').textContent = titles[name] || name;
     if (name === 'calendar' && calendar) calendar.render();
   }
@@ -996,13 +1093,31 @@
   }
 
   function jobsToEvents() {
-    return jobs.map(j => ({
-      id: j.id,
-      title: (j.client || 'Job') + ' — ' + (j.service || ''),
-      start: j.date + (j.time ? 'T' + j.time : ''),
-      classNames: ['status-' + (j.status || 'new')],
-      extendedProps: j,
-    }));
+    const events = [];
+    jobs.forEach(j => {
+      if (!j.date) return;
+      const base = {
+        id: j.id,
+        title: (j.client || 'Job') + ' — ' + (j.service || ''),
+        start: j.date + (j.time ? 'T' + j.time : ''),
+        classNames: ['status-' + (j.status || 'new')],
+        extendedProps: j,
+      };
+      events.push(base);
+      if (j.recurring && j.recurring !== 'none') {
+        const endLimit = j.recurringEnd ? new Date(j.recurringEnd + 'T00:00:00') : new Date(Date.now() + 365*24*60*60*1000);
+        let cur = new Date(j.date + 'T00:00:00');
+        for (let i = 1; i <= 52; i++) {
+          if (j.recurring === 'weekly') cur.setDate(cur.getDate() + 7);
+          else if (j.recurring === 'biweekly') cur.setDate(cur.getDate() + 14);
+          else cur.setMonth(cur.getMonth() + 1);
+          if (cur > endLimit) break;
+          const ds = cur.toISOString().split('T')[0];
+          events.push({ ...base, id: j.id + '_r' + i, start: ds + (j.time ? 'T' + j.time : ''), classNames: ['status-' + (j.status || 'new'), 'recurring-event'] });
+        }
+      }
+    });
+    return events;
   }
 
   function refreshCalendar() {
@@ -1039,6 +1154,11 @@
     document.getElementById('job-date').value = j ? j.date : '';
     document.getElementById('job-time').value = j ? j.time : '';
     document.getElementById('job-notes').value = j ? j.notes : '';
+    document.getElementById('job-recurring').value = j ? (j.recurring || 'none') : 'none';
+    document.getElementById('job-recurring-end').value = j ? (j.recurringEnd || '') : '';
+    document.getElementById('job-completion-notes').value = j ? (j.completionNotes || '') : '';
+    document.getElementById('job-photos-data').value = j ? (j.photos || '') : '';
+    renderJobPhotosPreview(j ? (j.photos || '') : '');
     document.getElementById('delete-job-btn').style.display = j ? 'inline-block' : 'none';
     openModal('job-modal');
   }
@@ -1056,6 +1176,10 @@
       date: document.getElementById('job-date').value,
       time: document.getElementById('job-time').value,
       notes: document.getElementById('job-notes').value,
+      recurring: document.getElementById('job-recurring').value,
+      recurringEnd: document.getElementById('job-recurring-end').value,
+      completionNotes: document.getElementById('job-completion-notes').value,
+      photos: document.getElementById('job-photos-data').value,
     };
     const idx = jobs.findIndex(j => j.id === id);
     if (idx >= 0) jobs[idx] = job; else jobs.push(job);
@@ -1788,6 +1912,166 @@
       </div>`).join('');
   }
 
+  // ─── RECURRING CALENDAR STYLE ─────────────────────────────────────
+  // (recurring-event gets a small "↻" dot via CSS added below)
+
+  // ─── JOB PHOTOS ───────────────────────────────────────────────────
+  function handleJobPhotos(input) {
+    const files = Array.from(input.files).slice(0, 3);
+    const existing = JSON.parse(document.getElementById('job-photos-data').value || '[]');
+    const readers = files.map(f => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxW = 800;
+          const scale = Math.min(1, maxW / img.width);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(f);
+    }));
+    Promise.all(readers).then(dataURLs => {
+      const combined = [...existing, ...dataURLs].slice(0, 3);
+      document.getElementById('job-photos-data').value = JSON.stringify(combined);
+      renderJobPhotosPreview(JSON.stringify(combined));
+    });
+    input.value = '';
+  }
+
+  function renderJobPhotosPreview(photosJson) {
+    const photos = photosJson ? JSON.parse(photosJson) : [];
+    const el = document.getElementById('job-photos-preview');
+    if (!el) return;
+    el.innerHTML = photos.map((src, i) => `
+      <div style="position:relative">
+        <img src="${src}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid #e0d9cc" />
+        <button onclick="removeJobPhoto(${i})" style="position:absolute;top:-6px;right:-6px;background:#c0392b;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1;padding:0">×</button>
+      </div>`).join('');
+  }
+
+  function removeJobPhoto(idx) {
+    const photos = JSON.parse(document.getElementById('job-photos-data').value || '[]');
+    photos.splice(idx, 1);
+    document.getElementById('job-photos-data').value = JSON.stringify(photos);
+    renderJobPhotosPreview(JSON.stringify(photos));
+  }
+
+  // ─── ROUTE PLANNER ────────────────────────────────────────────────
+  function buildRouteList() {
+    const date = document.getElementById('route-date').value;
+    if (!date) return;
+    const dayJobs = jobs.filter(j => j.date === date);
+    // also check recurring jobs that fall on this date
+    const extra = [];
+    jobs.forEach(j => {
+      if (!j.recurring || j.recurring === 'none' || !j.date) return;
+      const endLimit = j.recurringEnd ? new Date(j.recurringEnd + 'T00:00:00') : new Date(Date.now() + 365*24*60*60*1000);
+      let cur = new Date(j.date + 'T00:00:00');
+      for (let i = 1; i <= 52; i++) {
+        if (j.recurring === 'weekly') cur.setDate(cur.getDate() + 7);
+        else if (j.recurring === 'biweekly') cur.setDate(cur.getDate() + 14);
+        else cur.setMonth(cur.getMonth() + 1);
+        if (cur > endLimit) break;
+        if (cur.toISOString().split('T')[0] === date) extra.push(j);
+      }
+    });
+    const all = [...dayJobs, ...extra.filter(j => !dayJobs.find(d => d.id === j.id))];
+    const el = document.getElementById('route-jobs-list');
+    const btn = document.getElementById('route-open-btn');
+    const optBtn = document.getElementById('route-optimise-btn');
+    const hint = document.getElementById('route-hint');
+    if (!all.length) {
+      el.innerHTML = '<div style="color:#aaa;font-size:0.82rem;text-align:center;padding:1rem 0">No jobs scheduled for this date.</div>';
+      btn.style.display = 'none'; optBtn.style.display = 'none';
+      hint.textContent = 'No jobs found — add jobs in the calendar.';
+      return;
+    }
+    const withAddr = all.filter(j => j.address);
+    el.innerHTML = all.map((j, i) => `
+      <div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid #f0ece3">
+        <span style="font-size:0.75rem;font-weight:700;color:var(--green-dark);width:22px;flex-shrink:0">${i+1}</span>
+        <div style="flex:1">
+          <div style="font-size:0.85rem;font-weight:600">${j.client || '—'}</div>
+          <div style="font-size:0.72rem;color:#888">${j.service || ''}${j.time ? ' · ' + j.time : ''}${j.address ? ' · ' + j.address : '<span style="color:#e07000"> ⚠ No address</span>'}</div>
+        </div>
+        <span class="status-badge status-${j.status || 'new'}">${j.status || 'new'}</span>
+      </div>`).join('');
+    btn.style.display = withAddr.length ? 'inline-block' : 'none';
+    optBtn.style.display = withAddr.length > 1 ? 'inline-block' : 'none';
+    hint.textContent = withAddr.length < all.length ? `⚠ ${all.length - withAddr.length} job(s) missing addresses — add them in the job to include in route.` : `${withAddr.length} stop${withAddr.length > 1 ? 's' : ''} ready.`;
+  }
+
+  function openRouteInMaps(optimise) {
+    const date = document.getElementById('route-date').value;
+    const dayJobs = jobs.filter(j => j.date === date && j.address);
+    if (!dayJobs.length) return;
+    const addrs = dayJobs.map(j => encodeURIComponent(j.address));
+    const origin = addrs[0];
+    const dest = addrs[addrs.length - 1];
+    const waypoints = addrs.slice(1, -1).join('|');
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}`;
+    if (waypoints) url += `&waypoints=${waypoints}`;
+    if (optimise) url += '&travelmode=driving';
+    window.open(url, '_blank');
+  }
+
+  // ─── EXPENSE TRACKER ──────────────────────────────────────────────
+  let expenses = JSON.parse(localStorage.getItem('tls_expenses') || '[]');
+
+  function addExpense() {
+    const date = document.getElementById('exp-date').value;
+    const category = document.getElementById('exp-category').value;
+    const amount = parseFloat(document.getElementById('exp-amount').value);
+    const desc = document.getElementById('exp-desc').value.trim();
+    if (!date || !amount || amount <= 0) { showToast('Enter a date and amount.'); return; }
+    expenses.unshift({ id: 'e' + Date.now(), date, category, amount, desc });
+    localStorage.setItem('tls_expenses', JSON.stringify(expenses));
+    document.getElementById('exp-date').value = '';
+    document.getElementById('exp-amount').value = '';
+    document.getElementById('exp-desc').value = '';
+    renderExpenses();
+    renderReports();
+    showToast('Expense added!');
+  }
+
+  function deleteExpense(id) {
+    expenses = expenses.filter(e => e.id !== id);
+    localStorage.setItem('tls_expenses', JSON.stringify(expenses));
+    renderExpenses();
+    renderReports();
+  }
+
+  function renderExpenses() {
+    const el = document.getElementById('expense-list');
+    if (!el) return;
+    if (!expenses.length) {
+      el.innerHTML = '<div style="color:#aaa;font-size:0.82rem;text-align:center;padding:1rem">No expenses logged yet.</div>';
+      return;
+    }
+    el.innerHTML = `<table style="width:100%;font-size:0.8rem;border-collapse:collapse;margin-top:0.75rem">
+      <thead><tr style="border-bottom:2px solid #e8e0d0">
+        <th style="text-align:left;padding:6px 0;color:#888">Date</th>
+        <th style="text-align:left;padding:6px 0;color:#888">Category</th>
+        <th style="text-align:left;padding:6px 0;color:#888">Description</th>
+        <th style="text-align:right;padding:6px 0;color:#888">Amount</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${expenses.slice(0, 30).map(e => `<tr style="border-bottom:1px solid #f0ece3">
+        <td style="padding:7px 0;color:#666">${fmtDate(e.date)}</td>
+        <td style="padding:7px 0"><span style="background:#f5f0e8;padding:2px 7px;border-radius:3px;font-size:0.7rem;font-weight:600">${e.category}</span></td>
+        <td style="padding:7px 0;color:#555">${e.desc || '—'}</td>
+        <td style="padding:7px 0;text-align:right;font-weight:700;color:#c0392b">${fmt$(e.amount)}</td>
+        <td style="padding:7px 0;text-align:right"><button onclick="deleteExpense('${e.id}')" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:1rem" title="Delete">×</button></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
   // ─── FIREBASE SYNC ────────────────────────────────────────────────
   // After setting up Firebase (see instructions below), paste your
   // config here. Must match the config in index.html.
@@ -1998,12 +2282,18 @@
     const thisMonth = new Date().toISOString().slice(0,7);
     const monthRevenue = paidInvoices.filter(i => (i.date||'').startsWith(thisMonth)).reduce((s,i) => s + (i.total||0), 0);
 
+    const totalExpenses = expenses.reduce((s,e) => s + (e.amount||0), 0);
+    const netProfit = totalRevenue - totalExpenses;
+    const badge = document.getElementById('expense-profit-badge');
+    if (badge) badge.textContent = 'Net Profit: ' + fmt$(netProfit);
+
     // Stats
     document.getElementById('report-stats').innerHTML = `
       <div class="stat-card"><span class="stat-num">${fmt$(totalRevenue)}</span><span class="stat-label">Total Revenue</span></div>
       <div class="stat-card"><span class="stat-num">${fmt$(outstanding)}</span><span class="stat-label">Outstanding</span></div>
-      <div class="stat-card"><span class="stat-num">${fmt$(monthRevenue)}</span><span class="stat-label">This Month</span></div>
-      <div class="stat-card"><span class="stat-num">${invoices.length}</span><span class="stat-label">Total Invoices</span></div>`;
+      <div class="stat-card"><span class="stat-num">${fmt$(totalExpenses)}</span><span class="stat-label">Total Expenses</span></div>
+      <div class="stat-card"><span class="stat-num" style="color:${netProfit>=0?'var(--green-dark)':'#c0392b'}">${fmt$(netProfit)}</span><span class="stat-label">Net Profit</span></div>`;
+    renderExpenses();
 
     // Monthly breakdown
     const byMonth = {};
