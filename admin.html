@@ -1825,7 +1825,7 @@
   async function openPropertyMapper() {
     showPage('mapper', document.querySelector('.nav-item:last-of-type'));
     document.getElementById('page-title').textContent = 'Yard Mapper';
-    if (MAPS_API_KEY === 'AIzaSyBiEku_NOJOPrd1cWcCgW6nLKa0n7z5isQ') {
+    if (!MAPS_API_KEY || MAPS_API_KEY.length < 10) {
       document.getElementById('property-map').innerHTML = '<div style="text-align:center;padding:3rem;color:#c0392b;font-size:0.9rem">⚠ Google Maps API key not set yet.<br>Add your key to the MAPS_API_KEY variable in admin.html.</div>';
       return;
     }
