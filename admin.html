@@ -1046,29 +1046,138 @@
   let jobs = [];
   let clients = [];
   let requests = [];
+  let invoices = [];
+  let expenses = [];
   let calendar;
   let activeRequest = null;
   let _previewInvoice = null;
 
   // ─── INIT ─────────────────────────────────────────────────────────
   function initApp() {
-    jobs = getData('tls_jobs', []);
-    clients = getData('tls_clients', []);
-    requests = getData('tls_requests', sampleRequests());
-
     document.getElementById('topbar-date').textContent =
       new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    initFirestoreListeners();
+  }
 
+  function afterDataLoad() {
     updateStats();
     renderDashboard();
     renderRequests('all');
     renderClients('');
     populateEmailTo();
-    initCalendar();
+    if (!calendar) initCalendar(); else refreshCalendar();
     updateNewBadge();
-    syncFirestoreRequests();
-    syncFirestoreClients();
+    renderInvoiceList();
+    renderExpenses();
   }
+
+  // ─── FIRESTORE LISTENERS (single source of truth) ─────────────────
+  let _listenersReady = { clients:false, jobs:false, requests:false, invoices:false, expenses:false };
+  let _allLoaded = false;
+
+  function _checkAllLoaded() {
+    if (_allLoaded) return;
+    if (Object.values(_listenersReady).every(v => v)) {
+      _allLoaded = true;
+      afterDataLoad();
+      migrateLocalToFirestore();
+    }
+  }
+
+  function initFirestoreListeners() {
+    if (!db) {
+      // No Firestore — fall back to localStorage
+      jobs     = getData('tls_jobs', []);
+      clients  = getData('tls_clients', []);
+      requests = getData('tls_requests', sampleRequests());
+      invoices = JSON.parse(localStorage.getItem('tls_invoices') || '[]');
+      expenses = JSON.parse(localStorage.getItem('tls_expenses') || '[]');
+      Object.keys(_listenersReady).forEach(k => _listenersReady[k] = true);
+      afterDataLoad();
+      return;
+    }
+
+    db.collection('clients').onSnapshot(snap => {
+      clients = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      _listenersReady.clients = true;
+      renderClients(''); populateEmailTo(); updateStats();
+      _checkAllLoaded();
+    }, err => { console.warn('clients listener:', err); _listenersReady.clients = true; _checkAllLoaded(); });
+
+    db.collection('jobs').onSnapshot(snap => {
+      jobs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      _listenersReady.jobs = true;
+      if (calendar) refreshCalendar();
+      _checkAllLoaded();
+    }, err => { console.warn('jobs listener:', err); _listenersReady.jobs = true; _checkAllLoaded(); });
+
+    db.collection('requests').onSnapshot(snap => {
+      const incoming = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+        .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      // Show toast for new website requests after first load
+      if (_listenersReady.requests) {
+        incoming.forEach(r => {
+          if (!requests.find(x => x.id === r.id) && r.source === 'website')
+            showToast('New request from ' + r.name + '!');
+        });
+      }
+      requests = incoming;
+      _listenersReady.requests = true;
+      updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter);
+      _checkAllLoaded();
+    }, err => { console.warn('requests listener:', err); _listenersReady.requests = true; _checkAllLoaded(); });
+
+    db.collection('invoices').onSnapshot(snap => {
+      invoices = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+        .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _listenersReady.invoices = true;
+      renderInvoiceList();
+      _checkAllLoaded();
+    }, err => { console.warn('invoices listener:', err); _listenersReady.invoices = true; _checkAllLoaded(); });
+
+    db.collection('expenses').onSnapshot(snap => {
+      expenses = snap.docs.map(d => ({ ...d.data(), id: d.id }))
+        .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      _listenersReady.expenses = true;
+      renderExpenses();
+      _checkAllLoaded();
+    }, err => { console.warn('expenses listener:', err); _listenersReady.expenses = true; _checkAllLoaded(); });
+  }
+
+  async function migrateLocalToFirestore() {
+    if (!db) return;
+    const toMigrate = [];
+    const sampleIds = ['r1','r2','r3'];
+
+    const lc = getData('tls_clients', []);
+    if (clients.length === 0 && lc.length) lc.forEach(c => toMigrate.push(['clients', c.id, c]));
+
+    const lj = getData('tls_jobs', []);
+    if (jobs.length === 0 && lj.length) lj.forEach(j => toMigrate.push(['jobs', j.id, j]));
+
+    const lr = getData('tls_requests', []).filter(r => !sampleIds.includes(r.id));
+    if (requests.length === 0 && lr.length) lr.forEach(r => toMigrate.push(['requests', r.id, r]));
+
+    const li = JSON.parse(localStorage.getItem('tls_invoices') || '[]');
+    if (invoices.length === 0 && li.length) li.forEach(i => toMigrate.push(['invoices', i.id, i]));
+
+    const le = JSON.parse(localStorage.getItem('tls_expenses') || '[]');
+    if (expenses.length === 0 && le.length) le.forEach(e => toMigrate.push(['expenses', e.id, e]));
+
+    if (!toMigrate.length) return;
+    showToast('Migrating ' + toMigrate.length + ' records to cloud…');
+    for (let i = 0; i < toMigrate.length; i += 400) {
+      const batch = db.batch();
+      toMigrate.slice(i, i+400).forEach(([col, id, data]) => batch.set(db.collection(col).doc(id), data));
+      await batch.commit();
+    }
+    showToast('✓ All data saved to cloud!');
+  }
+
+  // Firestore helpers
+  function fsSet(col, id, data) { if (db) db.collection(col).doc(id).set(data).catch(e => console.warn(e)); }
+  function fsDel(col, id)       { if (db) db.collection(col).doc(id).delete().catch(e => console.warn(e)); }
+  function fsUpdate(col, id, fields) { if (db) db.collection(col).doc(id).update(fields).catch(e => console.warn(e)); }
 
   function sampleRequests() {
     return [
@@ -1180,7 +1289,8 @@
         const ms = new Date(event.endStr) - new Date(event.startStr);
         j.duration = Math.round(ms / 60000);
       }
-      setData('tls_jobs', jobs);
+      fsSet('jobs', j.id, j);
+      if (!db) setData('tls_jobs', jobs);
       showToast('Job rescheduled!');
     }
   }
@@ -1254,7 +1364,8 @@
     }
     const idx = jobs.findIndex(j => j.id === id);
     if (idx >= 0) jobs[idx] = job; else jobs.push(job);
-    setData('tls_jobs', jobs);
+    fsSet('jobs', id, job);
+    if (!db) setData('tls_jobs', jobs);
     closeModal('job-modal');
     refreshCalendar();
     showToast('Job saved!');
@@ -1263,7 +1374,8 @@
   function deleteJob() {
     const id = document.getElementById('job-id').value;
     jobs = jobs.filter(j => j.id !== id);
-    setData('tls_jobs', jobs);
+    fsDel('jobs', id);
+    if (!db) setData('tls_jobs', jobs);
     closeModal('job-modal');
     refreshCalendar();
     showToast('Job deleted.');
@@ -1308,8 +1420,8 @@
   function deleteRequest(id) {
     if (!confirm('Delete this request?')) return;
     requests = requests.filter(r => r.id !== id);
-    setData('tls_requests', requests);
-    if (db) { try { db.collection('requests').doc(id).delete(); } catch(e) {} }
+    fsDel('requests', id);
+    if (!db) setData('tls_requests', requests);
     updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter);
     showToast('Request deleted.');
   }
@@ -1373,7 +1485,7 @@
 
   function updateRequestStatus(id, status) {
     const r = requests.find(r => r.id === id);
-    if (r) { r.status = status; setData('tls_requests', requests); updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter); showToast('Status updated!'); }
+    if (r) { r.status = status; fsUpdate('requests', id, { status }); if (!db) setData('tls_requests', requests); updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter); showToast('Status updated!'); }
   }
 
   function convertToClient() {
@@ -1389,11 +1501,12 @@
     }
     const c = { id: 'c' + Date.now(), first, last, email: r.email, phone: r.phone, address: '', service: r.service, frequency: r.frequency, notes: r.message };
     clients.push(c);
-    setData('tls_clients', clients);
-    if (db) { try { db.collection('clients').doc(c.id).set(c); } catch(e) {} }
+    fsSet('clients', c.id, c);
+    if (!db) setData('tls_clients', clients);
     if (r.status === 'new') {
       r.status = 'contacted';
-      setData('tls_requests', requests);
+      fsUpdate('requests', r.id, { status: 'contacted' });
+      if (!db) setData('tls_requests', requests);
     }
     updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter);
     renderClients('');
@@ -1407,7 +1520,8 @@
     const r = activeRequest;
     if (r.status === 'new' || r.status === 'contacted') {
       r.status = 'booked';
-      setData('tls_requests', requests);
+      fsUpdate('requests', r.id, { status: 'booked' });
+      if (!db) setData('tls_requests', requests);
       updateStats(); updateNewBadge(); renderDashboard(); renderRequests(requestFilter);
     }
     closeModal('request-modal');
@@ -1501,8 +1615,8 @@
     const c = { id, first, last, email, phone, address: document.getElementById('client-address').value, service: document.getElementById('client-service').value, frequency: document.getElementById('client-frequency').value, notes: document.getElementById('client-notes').value };
     const idx = clients.findIndex(c => c.id === id);
     if (idx >= 0) clients[idx] = c; else clients.push(c);
-    setData('tls_clients', clients);
-    if (db) { try { db.collection('clients').doc(c.id).set(c); } catch(e) {} }
+    fsSet('clients', c.id, c);
+    if (!db) setData('tls_clients', clients);
     closeModal('client-modal');
     updateStats();
     renderClients('');
@@ -1513,8 +1627,8 @@
   function deleteClient() {
     const id = document.getElementById('client-id').value;
     clients = clients.filter(c => c.id !== id);
-    setData('tls_clients', clients);
-    if (db) { try { db.collection('clients').doc(id).delete(); } catch(e) {} }
+    fsDel('clients', id);
+    if (!db) setData('tls_clients', clients);
     closeModal('client-modal');
     updateStats();
     renderClients('');
@@ -1609,7 +1723,8 @@
       status: 'new'
     };
     requests.unshift(r);
-    setData('tls_requests', requests);
+    fsSet('requests', r.id, r);
+    if (!db) setData('tls_requests', requests);
     updateStats();
     updateNewBadge();
     renderDashboard();
@@ -1620,8 +1735,6 @@
   }
 
   // ─── INVOICES ─────────────────────────────────────────────────────
-  let invoices = JSON.parse(localStorage.getItem('tls_invoices') || '[]');
-  function saveInvoicesLS() { localStorage.setItem('tls_invoices', JSON.stringify(invoices)); }
 
   function openNewInvoice() {
     const wrap = document.getElementById('invoice-form-wrap');
@@ -1938,8 +2051,10 @@
     const inv = getInvoiceFormData();
     if (!inv.clientId) { showToast('Please select a client.'); return; }
     if (inv.items.length === 0) { showToast('Add at least one line item.'); return; }
-    invoices.unshift(inv);
-    saveInvoicesLS();
+    const idx = invoices.findIndex(i => i.id === inv.id);
+    if (idx >= 0) invoices[idx] = inv; else invoices.unshift(inv);
+    fsSet('invoices', inv.id, inv);
+    if (!db) localStorage.setItem('tls_invoices', JSON.stringify(invoices));
     renderInvoiceList();
     cancelInvoiceForm();
     showToast('Invoice saved!');
@@ -1949,14 +2064,16 @@
     const inv = invoices.find(i => i.id === id);
     if (!inv) return;
     inv.status = inv.status === 'paid' ? 'unpaid' : 'paid';
-    saveInvoicesLS();
+    fsUpdate('invoices', id, { status: inv.status });
+    if (!db) localStorage.setItem('tls_invoices', JSON.stringify(invoices));
     renderInvoiceList();
   }
 
   function deleteInvoice(id) {
     if (!confirm('Delete this invoice?')) return;
     invoices = invoices.filter(i => i.id !== id);
-    saveInvoicesLS();
+    fsDel('invoices', id);
+    if (!db) localStorage.setItem('tls_invoices', JSON.stringify(invoices));
     renderInvoiceList();
   }
 
@@ -2096,7 +2213,6 @@
   }
 
   // ─── EXPENSE TRACKER ──────────────────────────────────────────────
-  let expenses = JSON.parse(localStorage.getItem('tls_expenses') || '[]');
 
   function addExpense() {
     const date = document.getElementById('exp-date').value;
@@ -2104,8 +2220,10 @@
     const amount = parseFloat(document.getElementById('exp-amount').value);
     const desc = document.getElementById('exp-desc').value.trim();
     if (!date || !amount || amount <= 0) { showToast('Enter a date and amount.'); return; }
-    expenses.unshift({ id: 'e' + Date.now(), date, category, amount, desc });
-    localStorage.setItem('tls_expenses', JSON.stringify(expenses));
+    const exp = { id: 'e' + Date.now(), date, category, amount, desc };
+    expenses.unshift(exp);
+    fsSet('expenses', exp.id, exp);
+    if (!db) localStorage.setItem('tls_expenses', JSON.stringify(expenses));
     document.getElementById('exp-date').value = '';
     document.getElementById('exp-amount').value = '';
     document.getElementById('exp-desc').value = '';
@@ -2116,7 +2234,8 @@
 
   function deleteExpense(id) {
     expenses = expenses.filter(e => e.id !== id);
-    localStorage.setItem('tls_expenses', JSON.stringify(expenses));
+    fsDel('expenses', id);
+    if (!db) localStorage.setItem('tls_expenses', JSON.stringify(expenses));
     renderExpenses();
     renderReports();
   }
@@ -2311,10 +2430,6 @@
     console.warn('Firebase not configured — website form submissions will not auto-sync.');
   }
 
-  // Pulls website form submissions from Firestore into the admin portal.
-  // Fires immediately on login (catches up any missed submissions),
-  // then stays live so new requests appear in real-time without refreshing.
-  let _firstFirestoreSync = true;
   // ─── PROPERTY MAPPER ──────────────────────────────────────────────
   let propMap = null, drawingManager = null, mapPolygons = [], mapAutocomplete = null;
 
@@ -2457,7 +2572,8 @@
     const r = requests.find(r => r.id === id);
     if (!r) return;
     r.followUpDate = date;
-    setData('tls_requests', requests);
+    fsUpdate('requests', id, { followUpDate: date });
+    if (!db) setData('tls_requests', requests);
     renderRequests(requestFilter);
     renderDashboard();
     showToast(date ? 'Follow-up set!' : 'Follow-up cleared.');
@@ -2569,67 +2685,7 @@
     }).join('') : '<div style="color:#aaa;font-size:0.82rem">No follow-ups scheduled.</div>';
   }
 
-  function syncFirestoreClients() {
-    if (!db) return;
-    try {
-      db.collection('clients').get().then(snapshot => {
-        let changed = false;
-        snapshot.forEach(doc => {
-          if (!clients.find(c => c.id === doc.id)) {
-            clients.push({ ...doc.data(), id: doc.id });
-            changed = true;
-          } else {
-            const idx = clients.findIndex(c => c.id === doc.id);
-            clients[idx] = { ...doc.data(), id: doc.id };
-          }
-        });
-        if (changed || snapshot.size > 0) {
-          setData('tls_clients', clients);
-          renderClients('');
-          populateEmailTo();
-          updateStats();
-        }
-      });
-    } catch(err) {
-      console.warn('Firestore clients sync error:', err);
-    }
-  }
 
-  function syncFirestoreRequests() {
-    if (!db) return;
-    try {
-      db.collection('requests').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-        let changed = false;
-        snapshot.docChanges().forEach(change => {
-          if (change.type === 'added' && !requests.find(r => r.id === change.doc.id)) {
-            const d = change.doc.data();
-            requests.unshift({
-              id: change.doc.id,
-              name: d.name || '',
-              email: d.email || '',
-              phone: d.phone || '',
-              service: d.service || '',
-              frequency: d.frequency || '',
-              message: d.message || '',
-              date: d.date || new Date().toISOString().split('T')[0],
-              status: 'new',
-              source: 'website'
-            });
-            changed = true;
-          }
-        });
-        if (changed) {
-          setData('tls_requests', requests);
-          updateStats(); updateNewBadge(); renderDashboard();
-          renderRequests(requestFilter); populateEmailTo();
-          if (!_firstFirestoreSync) showToast('New website request received!');
-        }
-        _firstFirestoreSync = false;
-      });
-    } catch(err) {
-      console.warn('Firestore sync error:', err);
-    }
-  }
 </script>
 
 </body>
