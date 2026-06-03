@@ -11,6 +11,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    // Property Mapper — Google Maps loaded on demand when page is first opened
+    const MAPS_API_KEY = 'PASTE_YOUR_GOOGLE_MAPS_API_KEY_HERE';
+    let mapsLoaded = false;
+    function loadMapsAPI() {
+      if (mapsLoaded) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places,drawing,geometry&callback=initPropertyMapper`;
+        s.async = true; s.defer = true;
+        window.initPropertyMapper = function() { mapsLoaded = true; resolve(); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+  </script>
   <script>emailjs.init({ publicKey: 'JwuxfnbRWCEgev_9N' });</script>
   <style>
     :root {
@@ -357,6 +373,10 @@
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
         Reports
       </div>
+      <div class="nav-item" onclick="openPropertyMapper()">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></span>
+        Yard Mapper
+      </div>
     </nav>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="doLogout()">Log Out</button>
@@ -549,6 +569,40 @@
           <div class="section-header" style="margin-bottom:1rem"><span class="section-title">Follow-ups Due</span></div>
           <div id="report-followups"></div>
         </div>
+      </div>
+
+      <!-- PROPERTY MAPPER PAGE -->
+      <div class="page" id="page-mapper">
+        <div style="display:flex;gap:1rem;margin-bottom:1rem;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:260px">
+            <label class="form-label" style="display:block;margin-bottom:0.4rem">Search Address</label>
+            <input id="mapper-address" class="form-input" type="text" placeholder="123 Main St, Calgary, AB" style="width:100%" />
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap">
+            <button class="btn-primary" onclick="mapperSearch()" style="height:40px">Search</button>
+            <button class="btn-sm btn-outline-sm" onclick="mapperClear()" style="height:40px">Clear All</button>
+            <button class="btn-sm btn-green" onclick="mapperUndo()" style="height:40px">Undo Last</button>
+          </div>
+        </div>
+
+        <!-- Instructions -->
+        <div id="mapper-instructions" style="background:rgba(11,74,40,0.06);border:1px solid rgba(11,74,40,0.15);border-radius:4px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.8rem;color:#444;line-height:1.6">
+          <strong style="color:var(--green-dark)">How to use:</strong>
+          Search an address → satellite view loads → click the <strong>polygon tool</strong> in the top-right of the map →
+          click around the yard to draw its outline → double-click to finish → area appears below.
+          Draw multiple zones (front yard, backyard, etc.) separately.
+        </div>
+
+        <!-- Map -->
+        <div id="property-map" style="width:100%;height:520px;border-radius:6px;border:1px solid #e0d9cc;background:#e8e4dc;display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center;color:#aaa">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.75rem;opacity:0.4"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+            <div style="font-size:0.85rem">Search an address to load the satellite map</div>
+          </div>
+        </div>
+
+        <!-- Measurements -->
+        <div id="mapper-results" style="margin-top:1rem"></div>
       </div>
 
     </div><!-- /content -->
@@ -917,7 +971,7 @@
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices', reports: 'Reports' };
+    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices', reports: 'Reports', mapper: 'Yard Mapper' };
     if (name === 'invoices') renderInvoiceList();
     if (name === 'reports') renderReports();
     document.getElementById('page-title').textContent = titles[name] || name;
@@ -1765,6 +1819,143 @@
   // Fires immediately on login (catches up any missed submissions),
   // then stays live so new requests appear in real-time without refreshing.
   let _firstFirestoreSync = true;
+  // ─── PROPERTY MAPPER ──────────────────────────────────────────────
+  let propMap = null, drawingManager = null, mapPolygons = [], mapAutocomplete = null;
+
+  async function openPropertyMapper() {
+    showPage('mapper', document.querySelector('.nav-item:last-of-type'));
+    document.getElementById('page-title').textContent = 'Yard Mapper';
+    if (MAPS_API_KEY === 'PASTE_YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+      document.getElementById('property-map').innerHTML = '<div style="text-align:center;padding:3rem;color:#c0392b;font-size:0.9rem">⚠ Google Maps API key not set yet.<br>Add your key to the MAPS_API_KEY variable in admin.html.</div>';
+      return;
+    }
+    await loadMapsAPI();
+    if (!propMap) initMap();
+  }
+
+  function initMap() {
+    propMap = new google.maps.Map(document.getElementById('property-map'), {
+      zoom: 20,
+      center: { lat: 51.0447, lng: -114.0719 },
+      mapTypeId: 'satellite',
+      tilt: 0,
+      disableDefaultUI: false,
+      fullscreenControl: true,
+      streetViewControl: false,
+      mapTypeControl: false,
+      zoomControl: true,
+    });
+
+    drawingManager = new google.maps.drawing.DrawingManager({
+      drawingMode: null,
+      drawingControl: true,
+      drawingControlOptions: {
+        position: google.maps.ControlPosition.TOP_RIGHT,
+        drawingModes: [google.maps.drawing.OverlayType.POLYGON],
+      },
+      polygonOptions: {
+        fillColor: '#c9a84c',
+        fillOpacity: 0.3,
+        strokeColor: '#c9a84c',
+        strokeWeight: 2,
+        editable: true,
+        draggable: true,
+      },
+    });
+    drawingManager.setMap(propMap);
+
+    google.maps.event.addListener(drawingManager, 'polygoncomplete', function(polygon) {
+      mapPolygons.push(polygon);
+      drawingManager.setDrawingMode(null);
+      google.maps.event.addListener(polygon.getPath(), 'set_at', updateMapResults);
+      google.maps.event.addListener(polygon.getPath(), 'insert_at', updateMapResults);
+      updateMapResults();
+    });
+
+    // Autocomplete
+    mapAutocomplete = new google.maps.places.Autocomplete(
+      document.getElementById('mapper-address'),
+      { types: ['address'], componentRestrictions: { country: 'ca' } }
+    );
+    mapAutocomplete.addListener('place_changed', function() {
+      const place = mapAutocomplete.getPlace();
+      if (place.geometry) {
+        propMap.setCenter(place.geometry.location);
+        propMap.setZoom(20);
+      }
+    });
+  }
+
+  function mapperSearch() {
+    const addr = document.getElementById('mapper-address').value.trim();
+    if (!addr) return;
+    if (!propMap) { openPropertyMapper(); return; }
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: addr + ', Canada' }, function(results, status) {
+      if (status === 'OK') {
+        propMap.setCenter(results[0].geometry.location);
+        propMap.setZoom(20);
+      } else {
+        showToast('Address not found. Try adding the city.');
+      }
+    });
+  }
+
+  function mapperClear() {
+    mapPolygons.forEach(p => p.setMap(null));
+    mapPolygons = [];
+    updateMapResults();
+  }
+
+  function mapperUndo() {
+    if (!mapPolygons.length) return;
+    mapPolygons.pop().setMap(null);
+    updateMapResults();
+  }
+
+  function sqMetersToSqFt(m2) { return Math.round(m2 * 10.7639); }
+
+  function sizeLabel(sqft) {
+    if (sqft < 2000) return { label: 'Small', color: '#27ae60' };
+    if (sqft < 5000) return { label: 'Medium', color: '#f39c12' };
+    return { label: 'Large', color: '#c0392b' };
+  }
+
+  function updateMapResults() {
+    const container = document.getElementById('mapper-results');
+    if (!mapPolygons.length) { container.innerHTML = ''; return; }
+    let totalSqft = 0;
+    const zones = mapPolygons.map((poly, i) => {
+      const area = google.maps.geometry.spherical.computeArea(poly.getPath());
+      const sqft = sqMetersToSqFt(area);
+      totalSqft += sqft;
+      const sz = sizeLabel(sqft);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #f0ece3">
+        <span style="font-size:0.85rem;color:#555">Zone ${i+1}</span>
+        <div style="display:flex;align-items:center;gap:1rem">
+          <span style="font-size:0.85rem;font-weight:600">${sqft.toLocaleString()} sq ft</span>
+          <span style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;background:${sz.color}22;color:${sz.color};border-radius:2px">${sz.label}</span>
+        </div>
+      </div>`;
+    }).join('');
+    const total = sizeLabel(totalSqft);
+    container.innerHTML = `
+      <div class="panel" style="padding:1.25rem">
+        <div class="section-header" style="margin-bottom:0.75rem"><span class="section-title">Measurements</span></div>
+        ${zones}
+        ${mapPolygons.length > 1 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0 0;font-weight:700;font-size:0.9rem">
+          <span style="color:var(--green-dark)">Total Property</span>
+          <div style="display:flex;align-items:center;gap:1rem">
+            <span style="color:var(--green-dark)">${totalSqft.toLocaleString()} sq ft</span>
+            <span style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;background:${total.color}22;color:${total.color};border-radius:2px">${total.label}</span>
+          </div>
+        </div>` : ''}
+        <div style="margin-top:1rem;font-size:0.75rem;color:#aaa">
+          Small = under 2,000 sq ft &nbsp;·&nbsp; Medium = 2,000–5,000 sq ft &nbsp;·&nbsp; Large = 5,000+ sq ft
+        </div>
+      </div>`;
+  }
+
   // ─── FOLLOW-UP ────────────────────────────────────────────────────
   function saveFollowUp(id, date) {
     const r = requests.find(r => r.id === id);
