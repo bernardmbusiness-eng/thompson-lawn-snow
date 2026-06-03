@@ -353,6 +353,10 @@
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
         Invoices
       </div>
+      <div class="nav-item" onclick="showPage('reports', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        Reports
+      </div>
     </nav>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="doLogout()">Log Out</button>
@@ -528,6 +532,25 @@
         </div>
       </div>
 
+      <!-- REPORTS PAGE -->
+      <div class="page" id="page-reports">
+        <div class="stats-row" id="report-stats" style="margin-bottom:1.5rem"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+          <div class="panel">
+            <div class="section-header" style="margin-bottom:1rem"><span class="section-title">Monthly Revenue</span></div>
+            <div id="report-monthly"></div>
+          </div>
+          <div class="panel">
+            <div class="section-header" style="margin-bottom:1rem"><span class="section-title">Top Clients</span></div>
+            <div id="report-top-clients"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-header" style="margin-bottom:1rem"><span class="section-title">Follow-ups Due</span></div>
+          <div id="report-followups"></div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 
@@ -553,6 +576,10 @@
     <button class="mobile-nav-item" id="mnav-invoices" onclick="showPage('invoices',this);setMobileNav(this)">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Invoices
+    </button>
+    <button class="mobile-nav-item" id="mnav-reports" onclick="showPage('reports',this);setMobileNav(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Reports
     </button>
   </nav>
 
@@ -693,6 +720,10 @@
       <div class="form-group">
         <label class="form-label">Notes</label>
         <textarea class="form-textarea" id="client-notes"></textarea>
+      </div>
+      <div id="client-history-wrap" style="display:none;margin-top:1.5rem;border-top:1px solid #e8e0d0;padding-top:1.2rem">
+        <div class="form-label" style="margin-bottom:0.6rem">Job History</div>
+        <div id="client-history-body"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -886,8 +917,9 @@
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices' };
+    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices', reports: 'Reports' };
     if (name === 'invoices') renderInvoiceList();
+    if (name === 'reports') renderReports();
     document.getElementById('page-title').textContent = titles[name] || name;
     if (name === 'calendar' && calendar) calendar.render();
   }
@@ -1020,6 +1052,7 @@
       <div class="request-meta">${r.email}${r.phone ? ' · ' + r.phone : ''}</div>
       <div class="request-service">${r.service} · ${r.frequency}</div>
       ${r.message ? `<div class="request-msg">"${r.message}"</div>` : ''}
+      ${r.followUpDate ? `<div style="font-size:0.7rem;margin-top:0.4rem;color:${new Date(r.followUpDate+'T00:00:00') <= new Date() ? '#c0392b' : '#888'}">⏰ Follow up: ${new Date(r.followUpDate+'T00:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'})}</div>` : ''}
     </div>`;
   }
 
@@ -1071,6 +1104,10 @@
         <div><div class="form-label">Frequency</div><div style="font-size:0.85rem;color:#444">${r.frequency}</div></div>
       </div>
       ${r.message ? `<div class="form-label">Message</div><div style="font-size:0.85rem;color:#555;line-height:1.7;font-style:italic">"${r.message}"</div>` : ''}
+      <div class="form-group" style="margin-top:1.2rem">
+        <label class="form-label">Follow-up Date</label>
+        <input type="date" class="form-input" id="req-followup-date" value="${r.followUpDate || ''}" onchange="saveFollowUp('${r.id}', this.value)" />
+      </div>
     `;
     const addBtn = document.getElementById('add-client-btn');
     if (isAlreadyClient(r)) {
@@ -1177,6 +1214,7 @@
     document.getElementById('client-frequency').value = c ? c.frequency : 'One-Time';
     document.getElementById('client-notes').value = c ? c.notes : '';
     document.getElementById('delete-client-btn').style.display = c ? 'inline-block' : 'none';
+    if (c) renderClientHistory(c.id); else { document.getElementById('client-history-wrap').style.display='none'; }
     openModal('client-modal');
   }
 
@@ -1727,6 +1765,117 @@
   // Fires immediately on login (catches up any missed submissions),
   // then stays live so new requests appear in real-time without refreshing.
   let _firstFirestoreSync = true;
+  // ─── FOLLOW-UP ────────────────────────────────────────────────────
+  function saveFollowUp(id, date) {
+    const r = requests.find(r => r.id === id);
+    if (!r) return;
+    r.followUpDate = date;
+    setData('tls_requests', requests);
+    renderRequests(requestFilter);
+    renderDashboard();
+    showToast(date ? 'Follow-up set!' : 'Follow-up cleared.');
+  }
+
+  // ─── CLIENT HISTORY ───────────────────────────────────────────────
+  function renderClientHistory(clientId) {
+    const wrap = document.getElementById('client-history-wrap');
+    const body = document.getElementById('client-history-body');
+    const clientInvoices = invoices.filter(i => i.clientId === clientId).sort((a,b) => b.date.localeCompare(a.date));
+    if (!clientInvoices.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    body.innerHTML = clientInvoices.map(inv => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #f0ece3;font-size:0.82rem">
+        <div>
+          <span style="font-weight:600;color:var(--green-dark)">${inv.number}</span>
+          <span style="color:#888;margin-left:0.5rem">${fmtDate(inv.date)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <span style="font-weight:700;color:var(--green-dark)">${fmt$(inv.total)}</span>
+          <span style="font-size:0.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:2px;background:${inv.status==='paid'?'rgba(11,74,40,0.1)':inv.status==='overdue'?'rgba(192,57,43,0.1)':'rgba(201,168,76,0.15)'};color:${inv.status==='paid'?'var(--green-dark)':inv.status==='overdue'?'#c0392b':'#a8894a'}">${inv.status||'draft'}</span>
+          <button onclick="viewInvoice('${inv.id}')" style="background:none;border:none;cursor:pointer;font-size:0.7rem;color:var(--green-dark);text-decoration:underline">View</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // ─── REPORTS ──────────────────────────────────────────────────────
+  function renderReports() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const paidInvoices = invoices.filter(i => i.status === 'paid');
+    const unpaidInvoices = invoices.filter(i => i.status !== 'paid' && i.status !== 'draft');
+    const totalRevenue = paidInvoices.reduce((s,i) => s + (i.total||0), 0);
+    const outstanding = unpaidInvoices.reduce((s,i) => s + (i.total||0), 0);
+    const thisMonth = new Date().toISOString().slice(0,7);
+    const monthRevenue = paidInvoices.filter(i => (i.date||'').startsWith(thisMonth)).reduce((s,i) => s + (i.total||0), 0);
+
+    // Stats
+    document.getElementById('report-stats').innerHTML = `
+      <div class="stat-card"><span class="stat-num">${fmt$(totalRevenue)}</span><span class="stat-label">Total Revenue</span></div>
+      <div class="stat-card"><span class="stat-num">${fmt$(outstanding)}</span><span class="stat-label">Outstanding</span></div>
+      <div class="stat-card"><span class="stat-num">${fmt$(monthRevenue)}</span><span class="stat-label">This Month</span></div>
+      <div class="stat-card"><span class="stat-num">${invoices.length}</span><span class="stat-label">Total Invoices</span></div>`;
+
+    // Monthly breakdown
+    const byMonth = {};
+    invoices.forEach(i => {
+      const m = (i.date||'').slice(0,7); if (!m) return;
+      if (!byMonth[m]) byMonth[m] = { revenue:0, count:0, paid:0 };
+      byMonth[m].count++;
+      if (i.status === 'paid') { byMonth[m].revenue += i.total||0; byMonth[m].paid++; }
+    });
+    const months = Object.keys(byMonth).sort().reverse().slice(0,6);
+    document.getElementById('report-monthly').innerHTML = months.length ? `
+      <table style="width:100%;font-size:0.8rem;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid #e8e0d0">
+          <th style="text-align:left;padding:6px 0;color:#888;font-weight:600">Month</th>
+          <th style="text-align:right;padding:6px 0;color:#888;font-weight:600">Invoices</th>
+          <th style="text-align:right;padding:6px 0;color:#888;font-weight:600">Revenue</th>
+        </tr></thead>
+        <tbody>${months.map(m => `<tr style="border-bottom:1px solid #f0ece3">
+          <td style="padding:8px 0">${new Date(m+'-02').toLocaleDateString('en-CA',{month:'long',year:'numeric'})}</td>
+          <td style="padding:8px 0;text-align:right;color:#666">${byMonth[m].count}</td>
+          <td style="padding:8px 0;text-align:right;font-weight:700;color:var(--green-dark)">${fmt$(byMonth[m].revenue)}</td>
+        </tr>`).join('')}</tbody>
+      </table>` : '<div style="color:#aaa;font-size:0.82rem">No invoice data yet.</div>';
+
+    // Top clients
+    const byClient = {};
+    invoices.filter(i => i.status === 'paid').forEach(i => {
+      const k = i.clientId || i.clientName;
+      if (!byClient[k]) byClient[k] = { name: i.clientName, total:0, count:0 };
+      byClient[k].total += i.total||0; byClient[k].count++;
+    });
+    const topClients = Object.values(byClient).sort((a,b) => b.total-a.total).slice(0,5);
+    document.getElementById('report-top-clients').innerHTML = topClients.length ? `
+      <table style="width:100%;font-size:0.8rem;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid #e8e0d0">
+          <th style="text-align:left;padding:6px 0;color:#888;font-weight:600">Client</th>
+          <th style="text-align:right;padding:6px 0;color:#888;font-weight:600">Jobs</th>
+          <th style="text-align:right;padding:6px 0;color:#888;font-weight:600">Revenue</th>
+        </tr></thead>
+        <tbody>${topClients.map(c => `<tr style="border-bottom:1px solid #f0ece3">
+          <td style="padding:8px 0;font-weight:600">${c.name}</td>
+          <td style="padding:8px 0;text-align:right;color:#666">${c.count}</td>
+          <td style="padding:8px 0;text-align:right;font-weight:700;color:var(--green-dark)">${fmt$(c.total)}</td>
+        </tr>`).join('')}</tbody>
+      </table>` : '<div style="color:#aaa;font-size:0.82rem">No paid invoices yet.</div>';
+
+    // Follow-ups due
+    const followups = requests.filter(r => r.followUpDate && r.status !== 'closed')
+      .sort((a,b) => a.followUpDate.localeCompare(b.followUpDate));
+    document.getElementById('report-followups').innerHTML = followups.length ? followups.map(r => {
+      const d = new Date(r.followUpDate+'T00:00:00');
+      const overdue = d < today;
+      const dueStr = d.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid #f0ece3;font-size:0.82rem">
+        <div><span style="font-weight:600">${r.name}</span><span style="color:#888;margin-left:0.5rem">${r.service}</span></div>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <span style="color:${overdue?'#c0392b':'#888'};font-weight:${overdue?'700':'400'}">${overdue?'⚠ Overdue · ':''} ${dueStr}</span>
+          <button onclick="openRequest('${r.id}')" style="background:none;border:none;cursor:pointer;font-size:0.7rem;color:var(--green-dark);text-decoration:underline">Open</button>
+        </div>
+      </div>`;
+    }).join('') : '<div style="color:#aaa;font-size:0.82rem">No follow-ups scheduled.</div>';
+  }
+
   function syncFirestoreClients() {
     if (!db) return;
     try {
