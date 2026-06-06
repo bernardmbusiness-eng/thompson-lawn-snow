@@ -272,7 +272,10 @@
     .sign-row .fld { flex: 1; margin-bottom: 0; }
 
     .contactline {
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
       margin-top: 20px;
       padding-top: 12px;
       border-top: 1.5px solid #ddd;
@@ -281,6 +284,29 @@
       letter-spacing: 0.5px;
     }
     .contactline strong { color: var(--green-dark); }
+    .qr-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .qr-block img {
+      width: 76px;
+      height: 76px;
+      display: block;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    .qr-block .qr-cap {
+      font-size: 0.58rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--green-dark);
+      font-weight: 700;
+      line-height: 1.4;
+      text-align: left;
+    }
+    .qr-block .qr-cap span { display: block; color: #999; font-weight: 400; }
 
     @media print {
       body { background: #fff; padding: 0; }
@@ -444,7 +470,14 @@
 
     <!-- CONTACT FOOTER -->
     <div class="contactline">
-      <strong>Thompson Lawn &amp; Snow Maintenance</strong> &nbsp;•&nbsp; thompsonlawnsnow.ca &nbsp;•&nbsp; Calgary, AB
+      <div class="qr-block">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=https://thompsonlawnsnow.ca" alt="Scan to visit our website" />
+        <div class="qr-cap">Scan to visit<br>our website<span>thompsonlawnsnow.ca</span></div>
+      </div>
+      <div style="text-align:center;">
+        <strong>Thompson Lawn &amp; Snow Maintenance</strong><br>
+        thompsonlawnsnow.ca &nbsp;•&nbsp; Calgary, AB
+      </div>
     </div>
 
   </div>
