@@ -743,17 +743,18 @@
           </div>
           <div style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap">
             <button class="btn-primary" onclick="mapperSearch()" style="height:40px">Search</button>
+            <button class="btn-green" id="mapper-draw-btn" onclick="mapperStartDraw()" style="height:40px">✏️ Draw Yard</button>
+            <button class="btn-sm btn-outline-sm" onclick="mapperUndo()" style="height:40px">Undo Last</button>
             <button class="btn-sm btn-outline-sm" onclick="mapperClear()" style="height:40px">Clear All</button>
-            <button class="btn-sm btn-green" onclick="mapperUndo()" style="height:40px">Undo Last</button>
           </div>
         </div>
 
         <!-- Instructions -->
         <div id="mapper-instructions" style="background:rgba(11,74,40,0.06);border:1px solid rgba(11,74,40,0.15);border-radius:4px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.8rem;color:#444;line-height:1.6">
           <strong style="color:var(--green-dark)">How to use:</strong>
-          Search an address → satellite view loads → click the <strong>polygon tool</strong> in the top-right of the map →
-          click around the yard to draw its outline → double-click to finish → area appears below.
-          Draw multiple zones (front yard, backyard, etc.) separately.
+          Search an address → satellite view loads → tap <strong>✏️ Draw Yard</strong> →
+          tap each corner of the yard to drop points → tap the <strong>first point again</strong> (or double-click) to close the shape →
+          area appears below. Tap <strong>✏️ Draw Yard</strong> again for another zone (front, back, side).
         </div>
 
         <!-- Map -->
@@ -2563,6 +2564,15 @@
         propMap.setZoom(20);
       }
     });
+  }
+
+  function mapperStartDraw() {
+    if (!propMap || !drawingManager) {
+      showToast('Search an address first to load the map.');
+      return;
+    }
+    drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    showToast('Tap each corner of the yard, then tap the first point to finish.');
   }
 
   function mapperSearch() {
