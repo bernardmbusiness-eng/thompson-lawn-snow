@@ -753,8 +753,9 @@
         <div id="mapper-instructions" style="background:rgba(11,74,40,0.06);border:1px solid rgba(11,74,40,0.15);border-radius:4px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.8rem;color:#444;line-height:1.6">
           <strong style="color:var(--green-dark)">How to use:</strong>
           Search an address → satellite view loads → tap <strong>✏️ Draw Yard</strong> →
-          tap each corner of the yard to drop points → tap the <strong>first point again</strong> (or double-click) to close the shape →
-          area appears below. Tap <strong>✏️ Draw Yard</strong> again for another zone (front, back, side).
+          tap each corner of the yard to drop a dot → when done, tap the <strong>first dot</strong> or the red
+          <strong>Finish Zone</strong> button → area appears below. Tap <strong>✏️ Draw Yard</strong> again for
+          another zone (front, back, side). Drag any dot to fine-tune.
         </div>
 
         <!-- Map -->
@@ -2524,55 +2525,134 @@
       streetViewControl: false,
       mapTypeControl: false,
       zoomControl: true,
+      gestureHandling: 'greedy',
     });
 
-    drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: null,
-      drawingControl: true,
-      drawingControlOptions: {
-        position: google.maps.ControlPosition.TOP_RIGHT,
-        drawingModes: [google.maps.drawing.OverlayType.POLYGON],
-      },
-      polygonOptions: {
-        fillColor: '#c9a84c',
-        fillOpacity: 0.3,
-        strokeColor: '#c9a84c',
-        strokeWeight: 2,
-        editable: true,
-        draggable: true,
-      },
-    });
-    drawingManager.setMap(propMap);
-
-    google.maps.event.addListener(drawingManager, 'polygoncomplete', function(polygon) {
-      mapPolygons.push(polygon);
-      drawingManager.setDrawingMode(null);
-      google.maps.event.addListener(polygon.getPath(), 'set_at', updateMapResults);
-      google.maps.event.addListener(polygon.getPath(), 'insert_at', updateMapResults);
-      updateMapResults();
+    // Manual click-to-draw: tap each corner on the map to add a point.
+    // Works reliably on desktop AND touch (iPad/iPhone), unlike DrawingManager.
+    propMap.addListener('click', function(e) {
+      if (!isDrawing) return;
+      addDrawPoint(e.latLng);
     });
 
     // Autocomplete
-    mapAutocomplete = new google.maps.places.Autocomplete(
-      document.getElementById('mapper-address'),
-      { types: ['address'], componentRestrictions: { country: 'ca' } }
-    );
-    mapAutocomplete.addListener('place_changed', function() {
-      const place = mapAutocomplete.getPlace();
-      if (place.geometry) {
-        propMap.setCenter(place.geometry.location);
-        propMap.setZoom(20);
-      }
+    try {
+      mapAutocomplete = new google.maps.places.Autocomplete(
+        document.getElementById('mapper-address'),
+        { types: ['address'], componentRestrictions: { country: 'ca' } }
+      );
+      mapAutocomplete.addListener('place_changed', function() {
+        const place = mapAutocomplete.getPlace();
+        if (place.geometry) {
+          propMap.setCenter(place.geometry.location);
+          propMap.setZoom(20);
+        }
+      });
+    } catch (err) { console.warn('Autocomplete unavailable:', err); }
+  }
+
+  // ── Manual polygon drawing state ──
+  let isDrawing = false;
+  let drawPoints = [];      // array of LatLng for the zone being drawn
+  let drawMarkers = [];     // corner dot markers
+  let drawPreview = null;   // live polygon preview while drawing
+
+  function addDrawPoint(latLng) {
+    drawPoints.push(latLng);
+
+    // Drop a numbered corner marker
+    const marker = new google.maps.Marker({
+      position: latLng,
+      map: propMap,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 6,
+        fillColor: '#c9a84c',
+        fillOpacity: 1,
+        strokeColor: '#072e1a',
+        strokeWeight: 2,
+      },
     });
+    // Tap the FIRST marker to close the shape
+    if (drawPoints.length === 1) {
+      marker.addListener('click', function() { mapperFinishDraw(); });
+    }
+    drawMarkers.push(marker);
+
+    // Live preview polygon
+    if (drawPreview) drawPreview.setMap(null);
+    drawPreview = new google.maps.Polygon({
+      paths: drawPoints,
+      map: propMap,
+      fillColor: '#c9a84c',
+      fillOpacity: 0.25,
+      strokeColor: '#c9a84c',
+      strokeWeight: 2,
+      clickable: false,
+    });
+
+    updateDrawButton();
+  }
+
+  function mapperFinishDraw() {
+    if (!isDrawing) return;
+    if (drawPoints.length < 3) {
+      showToast('Tap at least 3 corners before finishing.');
+      return;
+    }
+    // Create the final editable polygon
+    const polygon = new google.maps.Polygon({
+      paths: drawPoints.slice(),
+      map: propMap,
+      fillColor: '#c9a84c',
+      fillOpacity: 0.3,
+      strokeColor: '#c9a84c',
+      strokeWeight: 2,
+      editable: true,
+    });
+    google.maps.event.addListener(polygon.getPath(), 'set_at', updateMapResults);
+    google.maps.event.addListener(polygon.getPath(), 'insert_at', updateMapResults);
+    mapPolygons.push(polygon);
+
+    cancelDraw();
+    updateMapResults();
+    showToast('Zone added!');
+  }
+
+  function cancelDraw() {
+    isDrawing = false;
+    drawMarkers.forEach(m => m.setMap(null));
+    drawMarkers = [];
+    drawPoints = [];
+    if (drawPreview) { drawPreview.setMap(null); drawPreview = null; }
+    updateDrawButton();
+  }
+
+  function updateDrawButton() {
+    const btn = document.getElementById('mapper-draw-btn');
+    if (!btn) return;
+    if (isDrawing) {
+      btn.innerHTML = drawPoints.length >= 3
+        ? '✓ Finish Zone (' + drawPoints.length + ' pts)'
+        : 'Tap corners… (' + drawPoints.length + ')';
+      btn.style.background = '#c0392b';
+    } else {
+      btn.innerHTML = '✏️ Draw Yard';
+      btn.style.background = '';
+    }
   }
 
   function mapperStartDraw() {
-    if (!propMap || !drawingManager) {
+    if (!propMap) {
       showToast('Search an address first to load the map.');
       return;
     }
-    drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    showToast('Tap each corner of the yard, then tap the first point to finish.');
+    // If already drawing, this button acts as "Finish"
+    if (isDrawing) { mapperFinishDraw(); return; }
+    isDrawing = true;
+    drawPoints = [];
+    updateDrawButton();
+    showToast('Tap each corner of the yard, then tap the first dot (or this button) to finish.');
   }
 
   function mapperSearch() {
@@ -2591,12 +2671,27 @@
   }
 
   function mapperClear() {
+    cancelDraw();
     mapPolygons.forEach(p => p.setMap(null));
     mapPolygons = [];
     updateMapResults();
   }
 
   function mapperUndo() {
+    // If mid-draw, undo the last placed corner instead of a whole zone
+    if (isDrawing && drawPoints.length) {
+      drawPoints.pop();
+      const m = drawMarkers.pop();
+      if (m) m.setMap(null);
+      if (drawPreview) drawPreview.setMap(null);
+      drawPreview = drawPoints.length ? new google.maps.Polygon({
+        paths: drawPoints, map: propMap,
+        fillColor: '#c9a84c', fillOpacity: 0.25,
+        strokeColor: '#c9a84c', strokeWeight: 2, clickable: false,
+      }) : null;
+      updateDrawButton();
+      return;
+    }
     if (!mapPolygons.length) return;
     mapPolygons.pop().setMap(null);
     updateMapResults();
