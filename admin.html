@@ -1152,12 +1152,17 @@
 
 <script>
   // ─── CONFIG ───────────────────────────────────────────────────────
-  // Admin accounts get FULL access (invoices, reports, revenue, expenses).
-  // Anyone else who can sign in is treated as "staff" (limited access).
-  // To make someone an admin, add their email here (lowercase).
-  const ADMIN_EMAILS = [
+  // OWNER accounts are the supreme admins. They:
+  //   • always have full admin access (can't be locked out, even via the DB)
+  //   • can NEVER be removed, demoted, or reset by other admins
+  //   • are the ONLY ones who can create/promote/remove OTHER admins
+  // Everyone else is either a regular "admin" (full access, manages staff only)
+  // or "staff" (limited access). Add owner emails here (lowercase).
+  const OWNER_EMAILS = [
     'info@thompsonlawnsnow.ca',
   ];
+  const ADMIN_EMAILS = OWNER_EMAILS; // bootstrap: owners are always admins
+  function isOwner(email) { return OWNER_EMAILS.includes((email || '').toLowerCase()); }
 
   let currentUser = null;     // { email, name, role }
   let _appStarted = false;
@@ -1207,23 +1212,22 @@
   // Returns 'admin' | 'staff', or null if the user has been removed/revoked.
   async function determineRole(email) {
     const e = (email || '').toLowerCase();
-    const isBootstrapAdmin = ADMIN_EMAILS.includes(e);
-    if (!db) return isBootstrapAdmin ? 'admin' : 'staff';
+    const owner = isOwner(e);
+    // Owners are supreme: always admin, no matter what the database says.
+    if (owner) {
+      if (db) { try { await db.collection('users').doc(e).set({ email: e, name: e.split('@')[0], role: 'owner', active: true }, { merge: true }); } catch (err) {} }
+      return 'admin';
+    }
+    if (!db) return 'staff';
     let doc = null;
     try { doc = await db.collection('users').doc(e).get(); } catch (err) { console.warn('role read failed', err); }
 
     if (doc && doc.exists) {
       const u = doc.data();
-      if (u.active === false && !isBootstrapAdmin) return null;   // revoked
+      if (u.active === false) return null;                 // revoked
       return u.role === 'admin' ? 'admin' : 'staff';
     }
-
-    // No record yet. Bootstrap admins are always allowed (and self-provision).
-    if (isBootstrapAdmin) {
-      try { await db.collection('users').doc(e).set({ email: e, name: e.split('@')[0], role: 'admin', active: true, createdAt: Date.now() }, { merge: true }); } catch (err) {}
-      return 'admin';
-    }
-    // A non-admin with no record = was never provisioned or was removed → block.
+    // No record = never provisioned or removed → block.
     return null;
   }
 
@@ -1243,7 +1247,7 @@
           if (er) { er.style.color = ''; er.textContent = 'Your access has been removed. Contact your administrator.'; er.style.display = 'block'; }
           return;
         }
-        currentUser = { email: user.email, name: (user.displayName || user.email.split('@')[0]), role: role };
+        currentUser = { email: user.email, name: (user.displayName || user.email.split('@')[0]), role: role, isOwner: isOwner(user.email) };
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         applyRoleUI(currentUser.role);
@@ -1286,9 +1290,11 @@
       const bottom = document.querySelector('.sidebar-bottom');
       if (bottom) bottom.insertBefore(el, bottom.firstChild);
     }
-    const badge = currentUser.role === 'admin'
-      ? '<span style="color:var(--gold);font-weight:700">ADMIN</span>'
-      : '<span style="color:var(--gold-light);font-weight:600">STAFF</span>';
+    const badge = currentUser.isOwner
+      ? '<span style="color:var(--gold);font-weight:700">OWNER</span>'
+      : currentUser.role === 'admin'
+        ? '<span style="color:var(--gold);font-weight:700">ADMIN</span>'
+        : '<span style="color:var(--gold-light);font-weight:600">STAFF</span>';
     el.innerHTML = 'Signed in as<br><strong style="color:#fff">' + currentUser.name + '</strong> &middot; ' + badge;
   }
 
@@ -1307,13 +1313,19 @@
     if (!db) { box.innerHTML = '<div style="padding:1rem;color:#888">Database unavailable.</div>'; return; }
     box.innerHTML = '<div style="padding:1rem;color:#888;font-size:0.85rem">Loading team…</div>';
     db.collection('users').get().then(snap => {
+      const rank = u => isOwner(u.id) ? 0 : (u.role === 'admin' ? 1 : 2);
       _teamUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a,b) => (a.role===b.role ? (a.name||'').localeCompare(b.name||'') : (a.role==='admin'?-1:1)));
+        .sort((a,b) => (rank(a) - rank(b)) || (a.name||'').localeCompare(b.name||''));
       if (!_teamUsers.length) { box.innerHTML = '<div style="padding:1rem;color:#888;font-size:0.85rem">No team members yet. Tap “+ Add User”.</div>'; return; }
+      const viewerIsOwner = currentUser && currentUser.isOwner;
       box.innerHTML = _teamUsers.map(u => {
         const isMe = currentUser && u.id === currentUser.email.toLowerCase();
+        const targetIsOwner = isOwner(u.id);
+        const targetIsAdmin = targetIsOwner || u.role === 'admin';
         const revoked = u.active === false;
-        const roleBadge = u.role === 'admin'
+        const roleBadge = targetIsOwner
+          ? '<span style="font-size:0.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:var(--gold);color:var(--green-dark)">OWNER</span>'
+          : u.role === 'admin'
           ? '<span style="font-size:0.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:var(--green-dark);color:var(--gold)">ADMIN</span>'
           : '<span style="font-size:0.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:#eef;color:#456">STAFF</span>';
         const revBadge = revoked ? ' <span style="font-size:0.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:#fde;color:#c0392b">REVOKED</span>' : '';
@@ -1321,12 +1333,18 @@
         let actions = '';
         if (isMe) {
           actions = '<span style="font-size:0.72rem;color:#999;font-style:italic">that’s you</span>';
+        } else if (targetIsOwner) {
+          // The owner is protected — nobody can act on this account.
+          actions = '<span style="font-size:0.72rem;color:var(--gold-muted);font-style:italic">🔒 protected owner</span>';
+        } else if (targetIsAdmin && !viewerIsOwner) {
+          // Regular admins cannot manage other admins — only the owner can.
+          actions = '<span style="font-size:0.72rem;color:#999;font-style:italic">admin · only the owner can change this</span>';
         } else if (revoked) {
           actions += `<button class="btn-sm btn-green" onclick="restoreUser('${eid}')">Restore Access</button>`;
         } else {
           if (u.role === 'admin')
             actions += `<button class="btn-sm btn-outline-sm" onclick="setUserRole('${eid}','staff')">Make Staff</button>`;
-          else
+          else if (viewerIsOwner)   // only the owner can promote someone to admin
             actions += `<button class="btn-sm btn-green" onclick="setUserRole('${eid}','admin')">Make Admin</button>`;
           actions += `<button class="btn-sm btn-outline-sm" onclick="resetUserPassword('${eid}')">Reset Password</button>`;
           actions += `<button class="btn-sm btn-danger" onclick="removeUser('${eid}')">Remove</button>`;
@@ -1354,7 +1372,11 @@
     document.getElementById('user-name').value = '';
     document.getElementById('user-email').value = '';
     document.getElementById('user-pass').value = '';
-    document.getElementById('user-role').value = 'staff';
+    const roleSel = document.getElementById('user-role');
+    roleSel.value = 'staff';
+    // Only the owner may create new admins.
+    const adminOpt = roleSel.querySelector('option[value="admin"]');
+    if (adminOpt) adminOpt.disabled = !(currentUser && currentUser.isOwner);
     genUserPass();
     openModal('user-modal');
   }
@@ -1368,6 +1390,7 @@
     if (!name) { showToast('Enter a name.'); return; }
     if (!email || !email.includes('@')) { showToast('Enter a valid email.'); return; }
     if (!pass || pass.length < 6) { showToast('Password must be at least 6 characters.'); return; }
+    if (role === 'admin' && !(currentUser && currentUser.isOwner)) { showToast('Only the owner can create admins.'); return; }
     btn.textContent = 'Creating…'; btn.disabled = true;
     try {
       const secAuth = getSecondaryAuth();
@@ -1386,7 +1409,19 @@
     }
   }
 
+  // Guard: returns false (and warns) if the action isn't permitted.
+  function canManage(targetEmail, opts) {
+    opts = opts || {};
+    if (isOwner(targetEmail)) { showToast('The owner account is protected and can’t be changed.'); return false; }
+    const targetIsAdmin = (_teamUsers.find(u => u.id === targetEmail) || {}).role === 'admin';
+    if ((targetIsAdmin || opts.affectsAdmin) && !(currentUser && currentUser.isOwner)) {
+      showToast('Only the owner can manage admin accounts.'); return false;
+    }
+    return true;
+  }
+
   async function setUserRole(email, role) {
+    if (!canManage(email, { affectsAdmin: role === 'admin' })) return;
     if (!confirm(role === 'admin'
       ? 'Give ' + email + ' FULL admin access (invoices, reports, revenue, and team management)?'
       : 'Change ' + email + ' to staff (limited access)?')) return;
@@ -1398,6 +1433,7 @@
   }
 
   async function removeUser(email) {
+    if (!canManage(email)) return;
     if (!confirm('Remove ' + email + '? They will no longer be able to sign in.')) return;
     try {
       // Block their access. We keep a record marked inactive so the login gate
@@ -1410,6 +1446,7 @@
   }
 
   async function restoreUser(email) {
+    if (!canManage(email)) return;
     try {
       await db.collection('users').doc(email).set({ active: true }, { merge: true });
       showToast('Access restored for ' + email + '.');
@@ -1419,6 +1456,7 @@
 
   function resetUserPassword(email) {
     if (!auth) return;
+    if (!canManage(email)) return;
     auth.sendPasswordResetEmail(email)
       .then(() => showToast('Password reset email sent to ' + email))
       .catch(err => showToast('Error: ' + err.message));
