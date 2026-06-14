@@ -479,6 +479,10 @@
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></span>
         Yard Mapper
       </div>
+      <div class="nav-item" data-role="admin" onclick="showPage('team', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        Team &amp; Logins
+      </div>
     </nav>
     <div class="sidebar-bottom">
       <button class="logout-btn" onclick="doLogout()">Log Out</button>
@@ -776,6 +780,20 @@
         <div id="mapper-results" style="margin-top:1rem"></div>
       </div>
 
+      <!-- TEAM & LOGINS PAGE (admin only) -->
+      <div class="page" id="page-team">
+        <div class="section-header">
+          <span class="section-title">Team &amp; Logins</span>
+          <button class="add-job-btn" onclick="openAddUserModal()">+ Add User</button>
+        </div>
+        <div style="background:rgba(11,74,40,0.06);border:1px solid rgba(11,74,40,0.15);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.8rem;color:#444;line-height:1.6">
+          <strong style="color:var(--green-dark)">Admins</strong> see everything (invoices, reports, revenue).
+          <strong style="color:var(--green-dark)">Staff</strong> see day-to-day tools only — no money pages.
+          Use <strong>Make Admin</strong> to give someone full access, or <strong>Remove</strong> to revoke a login.
+        </div>
+        <div class="panel" id="team-list" style="padding:0.5rem 1.25rem"></div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 
@@ -813,6 +831,10 @@
     <button class="mobile-nav-item" id="mnav-mapper" onclick="openPropertyMapper();setMobileNav(this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
       Mapper
+    </button>
+    <button class="mobile-nav-item" data-role="admin" id="mnav-team" onclick="showPage('team',this);setMobileNav(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+      Team
     </button>
   </nav>
 
@@ -918,6 +940,45 @@
       <button class="btn-danger" id="delete-job-btn" onclick="deleteJob()" style="display:none;margin-right:auto">Delete Job</button>
       <button class="btn-cancel" onclick="closeModal('job-modal')">Cancel</button>
       <button class="btn-primary" onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Team Member</span>
+      <button class="modal-close" onclick="closeModal('user-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" type="text" id="user-name" placeholder="John Smith" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email (this is their login)</label>
+        <input class="form-input" type="email" id="user-email" placeholder="john@thompsonlawnsnow.ca" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Starter Password</label>
+        <div style="display:flex;gap:0.5rem">
+          <input class="form-input" type="text" id="user-pass" placeholder="At least 6 characters" style="flex:1" />
+          <button class="btn-sm btn-outline-sm" type="button" onclick="genUserPass()" style="white-space:nowrap">Generate</button>
+        </div>
+        <div style="font-size:0.72rem;color:#888;margin-top:0.35rem">They can change it later with “Forgot password?” on the login screen.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Access Level</label>
+        <select class="form-select" id="user-role">
+          <option value="staff">Staff — day-to-day tools only (no money pages)</option>
+          <option value="admin">Admin — full access to everything</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('user-modal')">Cancel</button>
+      <button class="btn-primary" id="user-save-btn" onclick="saveNewUser()">Create Login</button>
     </div>
   </div>
 </div>
@@ -1101,8 +1162,8 @@
   let currentUser = null;     // { email, name, role }
   let _appStarted = false;
 
-  // Pages staff are NOT allowed to see (sensitive money areas)
-  const ADMIN_ONLY_PAGES = ['invoices', 'reports'];
+  // Pages staff are NOT allowed to see (sensitive money areas + user mgmt)
+  const ADMIN_ONLY_PAGES = ['invoices', 'reports', 'team'];
 
   // ─── AUTH (Firebase) ──────────────────────────────────────────────
   function doLogin() {
@@ -1142,20 +1203,47 @@
       .catch(() => { errEl.style.color = ''; errEl.textContent = 'Could not send reset email. Check the address.'; errEl.style.display = 'block'; });
   }
 
-  function roleFor(email) {
-    return ADMIN_EMAILS.includes((email || '').toLowerCase()) ? 'admin' : 'staff';
+  // Determine a user's role from the database (so admins can change it live).
+  // Returns 'admin' | 'staff', or null if the user has been removed/revoked.
+  async function determineRole(email) {
+    const e = (email || '').toLowerCase();
+    const isBootstrapAdmin = ADMIN_EMAILS.includes(e);
+    if (!db) return isBootstrapAdmin ? 'admin' : 'staff';
+    let doc = null;
+    try { doc = await db.collection('users').doc(e).get(); } catch (err) { console.warn('role read failed', err); }
+
+    if (doc && doc.exists) {
+      const u = doc.data();
+      if (u.active === false && !isBootstrapAdmin) return null;   // revoked
+      return u.role === 'admin' ? 'admin' : 'staff';
+    }
+
+    // No record yet. Bootstrap admins are always allowed (and self-provision).
+    if (isBootstrapAdmin) {
+      try { await db.collection('users').doc(e).set({ email: e, name: e.split('@')[0], role: 'admin', active: true, createdAt: Date.now() }, { merge: true }); } catch (err) {}
+      return 'admin';
+    }
+    // A non-admin with no record = was never provisioned or was removed → block.
+    return null;
   }
 
   // Keeps users signed in across refreshes; reacts to login/logout.
   function initAuthGate() {
     if (!auth) {
-      // No auth available — fall back to showing login (won't sign in).
       document.getElementById('login-screen').style.display = 'flex';
       return;
     }
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async user => {
       if (user) {
-        currentUser = { email: user.email, name: (user.displayName || user.email.split('@')[0]), role: roleFor(user.email) };
+        const role = await determineRole(user.email);
+        if (!role) {
+          // Access removed/revoked — kick them back to login.
+          await auth.signOut();
+          const er = document.getElementById('login-error');
+          if (er) { er.style.color = ''; er.textContent = 'Your access has been removed. Contact your administrator.'; er.style.display = 'block'; }
+          return;
+        }
+        currentUser = { email: user.email, name: (user.displayName || user.email.split('@')[0]), role: role };
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         applyRoleUI(currentUser.role);
@@ -1168,7 +1256,7 @@
         const ls = document.getElementById('login-screen');
         ls.style.display = 'flex';
         const pw = document.getElementById('pw-input'); if (pw) pw.value = '';
-        const er = document.getElementById('login-error'); if (er) { er.style.display = 'none'; er.style.color = ''; }
+        const er = document.getElementById('login-error'); if (er && er.style.color !== '') { /* keep revoke msg */ } else if (er) { er.style.display = 'none'; }
       }
     });
   }
@@ -1202,6 +1290,138 @@
       ? '<span style="color:var(--gold);font-weight:700">ADMIN</span>'
       : '<span style="color:var(--gold-light);font-weight:600">STAFF</span>';
     el.innerHTML = 'Signed in as<br><strong style="color:#fff">' + currentUser.name + '</strong> &middot; ' + badge;
+  }
+
+  // ─── TEAM / USER MANAGEMENT (admin only) ──────────────────────────
+  // We use a SECONDARY Firebase app so creating a user doesn't sign the
+  // admin out of their own session.
+  let _secondaryApp = null;
+  function getSecondaryAuth() {
+    if (!_secondaryApp) _secondaryApp = firebase.initializeApp(firebaseConfig, 'userMgmt');
+    return _secondaryApp.auth();
+  }
+
+  let _teamUsers = [];
+  function renderTeam() {
+    const box = document.getElementById('team-list');
+    if (!db) { box.innerHTML = '<div style="padding:1rem;color:#888">Database unavailable.</div>'; return; }
+    box.innerHTML = '<div style="padding:1rem;color:#888;font-size:0.85rem">Loading team…</div>';
+    db.collection('users').get().then(snap => {
+      _teamUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (a.role===b.role ? (a.name||'').localeCompare(b.name||'') : (a.role==='admin'?-1:1)));
+      if (!_teamUsers.length) { box.innerHTML = '<div style="padding:1rem;color:#888;font-size:0.85rem">No team members yet. Tap “+ Add User”.</div>'; return; }
+      box.innerHTML = _teamUsers.map(u => {
+        const isMe = currentUser && u.id === currentUser.email.toLowerCase();
+        const revoked = u.active === false;
+        const roleBadge = u.role === 'admin'
+          ? '<span style="font-size:0.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:var(--green-dark);color:var(--gold)">ADMIN</span>'
+          : '<span style="font-size:0.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:#eef;color:#456">STAFF</span>';
+        const revBadge = revoked ? ' <span style="font-size:0.6rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:#fde;color:#c0392b">REVOKED</span>' : '';
+        const eid = u.id.replace(/'/g, "\\'");
+        let actions = '';
+        if (isMe) {
+          actions = '<span style="font-size:0.72rem;color:#999;font-style:italic">that’s you</span>';
+        } else if (revoked) {
+          actions += `<button class="btn-sm btn-green" onclick="restoreUser('${eid}')">Restore Access</button>`;
+        } else {
+          if (u.role === 'admin')
+            actions += `<button class="btn-sm btn-outline-sm" onclick="setUserRole('${eid}','staff')">Make Staff</button>`;
+          else
+            actions += `<button class="btn-sm btn-green" onclick="setUserRole('${eid}','admin')">Make Admin</button>`;
+          actions += `<button class="btn-sm btn-outline-sm" onclick="resetUserPassword('${eid}')">Reset Password</button>`;
+          actions += `<button class="btn-sm btn-danger" onclick="removeUser('${eid}')">Remove</button>`;
+        }
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.85rem 0;border-bottom:1px solid #f0ece3;flex-wrap:wrap">
+          <div style="min-width:200px">
+            <div style="font-weight:600;font-size:0.9rem">${u.name || u.id} ${roleBadge}${revBadge}</div>
+            <div style="font-size:0.78rem;color:#888">${u.id}</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">${actions}</div>
+        </div>`;
+      }).join('');
+    }).catch(err => {
+      box.innerHTML = '<div style="padding:1rem;color:#c0392b;font-size:0.85rem">Could not load team: ' + err.message + '</div>';
+    });
+  }
+
+  function genUserPass() {
+    const words = ['Maple','Cedar','Birch','Aspen','Spruce','Willow','Poplar'];
+    const p = words[Math.floor(Math.random()*words.length)] + Math.floor(1000 + Math.random()*9000) + '!';
+    document.getElementById('user-pass').value = p;
+  }
+
+  function openAddUserModal() {
+    document.getElementById('user-name').value = '';
+    document.getElementById('user-email').value = '';
+    document.getElementById('user-pass').value = '';
+    document.getElementById('user-role').value = 'staff';
+    genUserPass();
+    openModal('user-modal');
+  }
+
+  async function saveNewUser() {
+    const name = document.getElementById('user-name').value.trim();
+    const email = document.getElementById('user-email').value.trim().toLowerCase();
+    const pass = document.getElementById('user-pass').value;
+    const role = document.getElementById('user-role').value;
+    const btn = document.getElementById('user-save-btn');
+    if (!name) { showToast('Enter a name.'); return; }
+    if (!email || !email.includes('@')) { showToast('Enter a valid email.'); return; }
+    if (!pass || pass.length < 6) { showToast('Password must be at least 6 characters.'); return; }
+    btn.textContent = 'Creating…'; btn.disabled = true;
+    try {
+      const secAuth = getSecondaryAuth();
+      const cred = await secAuth.createUserWithEmailAndPassword(email, pass);
+      try { await cred.user.updateProfile({ displayName: name }); } catch (e) {}
+      await secAuth.signOut();
+      await db.collection('users').doc(email).set({ email, name, role, active: true, createdAt: Date.now() });
+      closeModal('user-modal');
+      showToast('✓ Login created for ' + name);
+      renderTeam();
+    } catch (err) {
+      console.warn('create user error', err);
+      showToast(err.code === 'auth/email-already-in-use' ? 'That email already has a login.' : 'Error: ' + err.message);
+    } finally {
+      btn.textContent = 'Create Login'; btn.disabled = false;
+    }
+  }
+
+  async function setUserRole(email, role) {
+    if (!confirm(role === 'admin'
+      ? 'Give ' + email + ' FULL admin access (invoices, reports, revenue, and team management)?'
+      : 'Change ' + email + ' to staff (limited access)?')) return;
+    try {
+      await db.collection('users').doc(email).set({ role }, { merge: true });
+      showToast('Updated. Takes effect next time they sign in.');
+      renderTeam();
+    } catch (err) { showToast('Error: ' + err.message); }
+  }
+
+  async function removeUser(email) {
+    if (!confirm('Remove ' + email + '? They will no longer be able to sign in.')) return;
+    try {
+      // Block their access. We keep a record marked inactive so the login gate
+      // rejects them (their Auth credential can be fully deleted in the
+      // Firebase console later if desired).
+      await db.collection('users').doc(email).set({ active: false }, { merge: true });
+      showToast('Access removed for ' + email + '.');
+      renderTeam();
+    } catch (err) { showToast('Error: ' + err.message); }
+  }
+
+  async function restoreUser(email) {
+    try {
+      await db.collection('users').doc(email).set({ active: true }, { merge: true });
+      showToast('Access restored for ' + email + '.');
+      renderTeam();
+    } catch (err) { showToast('Error: ' + err.message); }
+  }
+
+  function resetUserPassword(email) {
+    if (!auth) return;
+    auth.sendPasswordResetEmail(email)
+      .then(() => showToast('Password reset email sent to ' + email))
+      .catch(err => showToast('Error: ' + err.message));
   }
 
   // ─── DATA (localStorage) ──────────────────────────────────────────
@@ -1385,9 +1605,10 @@
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices', reports: 'Reports', mapper: 'Yard Mapper', route: 'Route Planner' };
+    const titles = { dashboard: 'Dashboard', calendar: 'Job Calendar', requests: 'Quote Requests', clients: 'Clients', email: 'Send Email', invoices: 'Invoices', reports: 'Reports', mapper: 'Yard Mapper', route: 'Route Planner', team: 'Team & Logins' };
     if (name === 'invoices') renderInvoiceList();
     if (name === 'reports') renderReports();
+    if (name === 'team') renderTeam();
     if (name === 'route') {
       const rd = document.getElementById('route-date');
       if (rd && !rd.value) { rd.value = new Date().toISOString().split('T')[0]; buildRouteList(); }
