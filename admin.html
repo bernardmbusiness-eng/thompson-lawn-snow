@@ -435,6 +435,8 @@
 
 <!-- APP -->
 <div id="app">
+  <!-- CONNECTION STATUS BANNER (door-knocking / offline feedback) -->
+  <div id="conn-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:300;text-align:center;font-size:0.78rem;font-weight:600;padding:7px 12px;color:#fff"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
@@ -2859,6 +2861,12 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
+    // OFFLINE MODE: cache data on the device so the portal keeps working
+    // with no signal (door-knocking in dead zones, basements, new builds).
+    // Anything added offline is queued and syncs automatically once back online.
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      console.warn('Offline persistence unavailable:', err && err.code);
+    });
   } catch(e) {
     console.warn('Firebase not configured — website form submissions will not auto-sync.');
   }
@@ -3221,7 +3229,31 @@
     }).join('') : '<div style="color:#aaa;font-size:0.82rem">No follow-ups scheduled.</div>';
   }
 
+  // ─── CONNECTION STATUS (offline feedback for field use) ───────────
+  function initConnectionWatcher() {
+    const banner = document.getElementById('conn-banner');
+    if (!banner) return;
+    let hideTimer = null;
+    function setOnline() {
+      clearTimeout(hideTimer);
+      banner.style.background = '#1e7e34';
+      banner.textContent = '✓ Back online — syncing your changes…';
+      banner.style.display = 'block';
+      hideTimer = setTimeout(() => { banner.style.display = 'none'; }, 2500);
+    }
+    function setOffline() {
+      clearTimeout(hideTimer);
+      banner.style.background = '#c0392b';
+      banner.textContent = '⚠ Offline — your changes are saved and will sync when you’re back online.';
+      banner.style.display = 'block';
+    }
+    window.addEventListener('online', setOnline);
+    window.addEventListener('offline', setOffline);
+    if (!navigator.onLine) setOffline();
+  }
+
   // ─── START: check who's signed in (Firebase Auth) ─────────────────
+  initConnectionWatcher();
   initAuthGate();
 
 </script>
