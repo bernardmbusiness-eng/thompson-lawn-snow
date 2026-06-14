@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
@@ -419,11 +420,16 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Thompson</div>
-    <div class="login-sub">Admin Panel</div>
-    <label class="login-label">Password</label>
-    <input class="login-input" type="password" id="pw-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter') doLogin()" />
-    <button class="login-btn" onclick="doLogin()">Sign In</button>
-    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
+    <div class="login-sub">Staff Sign In</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="email-input" autocomplete="username" placeholder="you@thompsonlawnsnow.ca" onkeydown="if(event.key==='Enter') document.getElementById('pw-input').focus()" />
+    <label class="login-label" style="margin-top:0.75rem">Password</label>
+    <input class="login-input" type="password" id="pw-input" autocomplete="current-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter') doLogin()" />
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Incorrect email or password.</div>
+    <div style="margin-top:0.85rem;text-align:center">
+      <a href="#" onclick="doResetPassword();return false;" style="font-size:0.72rem;color:var(--gold-muted);text-decoration:none">Forgot password?</a>
+    </div>
   </div>
 </div>
 
@@ -457,11 +463,11 @@
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
         Send Email
       </div>
-      <div class="nav-item" onclick="showPage('invoices', this)">
+      <div class="nav-item" data-role="admin" onclick="showPage('invoices', this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
         Invoices
       </div>
-      <div class="nav-item" onclick="showPage('reports', this)">
+      <div class="nav-item" data-role="admin" onclick="showPage('reports', this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
         Reports
       </div>
@@ -792,7 +798,7 @@
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Calendar
     </button>
-    <button class="mobile-nav-item" id="mnav-invoices" onclick="showPage('invoices',this);setMobileNav(this)">
+    <button class="mobile-nav-item" data-role="admin" id="mnav-invoices" onclick="showPage('invoices',this);setMobileNav(this)">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Invoices
     </button>
@@ -800,7 +806,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
       Route
     </button>
-    <button class="mobile-nav-item" id="mnav-reports" onclick="showPage('reports',this);setMobileNav(this)">
+    <button class="mobile-nav-item" data-role="admin" id="mnav-reports" onclick="showPage('reports',this);setMobileNav(this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Reports
     </button>
@@ -1085,25 +1091,117 @@
 
 <script>
   // ─── CONFIG ───────────────────────────────────────────────────────
-  const ADMIN_PASSWORD = '?Separatism101?';
+  // Admin accounts get FULL access (invoices, reports, revenue, expenses).
+  // Anyone else who can sign in is treated as "staff" (limited access).
+  // To make someone an admin, add their email here (lowercase).
+  const ADMIN_EMAILS = [
+    'info@thompsonlawnsnow.ca',
+  ];
 
-  // ─── AUTH ─────────────────────────────────────────────────────────
+  let currentUser = null;     // { email, name, role }
+  let _appStarted = false;
+
+  // Pages staff are NOT allowed to see (sensitive money areas)
+  const ADMIN_ONLY_PAGES = ['invoices', 'reports'];
+
+  // ─── AUTH (Firebase) ──────────────────────────────────────────────
   function doLogin() {
-    const val = document.getElementById('pw-input').value;
-    if (val === ADMIN_PASSWORD) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      initApp();
-    } else {
-      document.getElementById('login-error').style.display = 'block';
-      document.getElementById('pw-input').value = '';
+    const email = (document.getElementById('email-input').value || '').trim();
+    const pw = document.getElementById('pw-input').value;
+    const errEl = document.getElementById('login-error');
+    const btn = document.getElementById('login-btn');
+    errEl.style.display = 'none';
+    if (!email || !pw) { errEl.textContent = 'Enter your email and password.'; errEl.style.display = 'block'; return; }
+    if (!auth) { errEl.textContent = 'Login service unavailable. Check your connection.'; errEl.style.display = 'block'; return; }
+    btn.textContent = 'Signing in…'; btn.disabled = true;
+    auth.signInWithEmailAndPassword(email, pw)
+      .then(() => { /* onAuthStateChanged handles the rest */ })
+      .catch(err => {
+        console.warn('Login error:', err.code);
+        errEl.textContent = (err.code === 'auth/too-many-requests')
+          ? 'Too many attempts. Try again in a few minutes.'
+          : 'Incorrect email or password.';
+        errEl.style.display = 'block';
+        document.getElementById('pw-input').value = '';
+      })
+      .finally(() => { btn.textContent = 'Sign In'; btn.disabled = false; });
+  }
+
+  function doLogout() {
+    if (auth) auth.signOut();
+    // onAuthStateChanged will show the login screen
+  }
+
+  function doResetPassword() {
+    const email = (document.getElementById('email-input').value || '').trim();
+    const errEl = document.getElementById('login-error');
+    if (!email) { errEl.textContent = 'Enter your email first, then tap “Forgot password?”.'; errEl.style.display = 'block'; return; }
+    if (!auth) return;
+    auth.sendPasswordResetEmail(email)
+      .then(() => { errEl.style.color = 'var(--green-dark)'; errEl.textContent = 'Password reset email sent to ' + email; errEl.style.display = 'block'; })
+      .catch(() => { errEl.style.color = ''; errEl.textContent = 'Could not send reset email. Check the address.'; errEl.style.display = 'block'; });
+  }
+
+  function roleFor(email) {
+    return ADMIN_EMAILS.includes((email || '').toLowerCase()) ? 'admin' : 'staff';
+  }
+
+  // Keeps users signed in across refreshes; reacts to login/logout.
+  function initAuthGate() {
+    if (!auth) {
+      // No auth available — fall back to showing login (won't sign in).
+      document.getElementById('login-screen').style.display = 'flex';
+      return;
+    }
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = { email: user.email, name: (user.displayName || user.email.split('@')[0]), role: roleFor(user.email) };
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        applyRoleUI(currentUser.role);
+        showWhoAmI();
+        if (!_appStarted) { _appStarted = true; initApp(); }
+      } else {
+        currentUser = null;
+        _appStarted = false;
+        document.getElementById('app').style.display = 'none';
+        const ls = document.getElementById('login-screen');
+        ls.style.display = 'flex';
+        const pw = document.getElementById('pw-input'); if (pw) pw.value = '';
+        const er = document.getElementById('login-error'); if (er) { er.style.display = 'none'; er.style.color = ''; }
+      }
+    });
+  }
+
+  // Show/hide sensitive nav items based on role.
+  function applyRoleUI(role) {
+    const isAdmin = role === 'admin';
+    document.querySelectorAll('[data-role="admin"]').forEach(el => {
+      el.style.display = isAdmin ? '' : 'none';
+    });
+    // If a staff member is sitting on an admin-only page, bounce to dashboard.
+    if (!isAdmin) {
+      const activePage = document.querySelector('.page.active');
+      if (activePage && ADMIN_ONLY_PAGES.includes(activePage.id.replace('page-', ''))) {
+        showPage('dashboard', document.querySelector('.nav-item'));
+      }
     }
   }
-  function doLogout() {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('login-error').style.display = 'none';
+
+  // Display who's logged in + their role in the sidebar.
+  function showWhoAmI() {
+    let el = document.getElementById('whoami');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'whoami';
+      el.style.cssText = 'padding:0.5rem 0.75rem;font-size:0.7rem;color:var(--text-light);opacity:0.85;line-height:1.4;border-top:1px solid rgba(255,255,255,0.08);margin-bottom:0.5rem';
+      const bottom = document.querySelector('.sidebar-bottom');
+      if (bottom) bottom.insertBefore(el, bottom.firstChild);
+    }
+    const badge = currentUser.role === 'admin'
+      ? '<span style="color:var(--gold);font-weight:700">ADMIN</span>'
+      : '<span style="color:var(--gold-light);font-weight:600">STAFF</span>';
+    el.innerHTML = 'Signed in as<br><strong style="color:#fff">' + currentUser.name + '</strong> &middot; ' + badge;
   }
 
   // ─── DATA (localStorage) ──────────────────────────────────────────
@@ -1278,6 +1376,11 @@
 
   // ─── NAVIGATION ───────────────────────────────────────────────────
   function showPage(name, el) {
+    // Block staff from opening admin-only pages
+    if (currentUser && currentUser.role !== 'admin' && ADMIN_ONLY_PAGES.includes(name)) {
+      showToast('You don’t have access to that section.');
+      return;
+    }
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
@@ -2492,10 +2595,11 @@
     appId:             "1:858332917088:web:d551024b8d754409760205"
   };
 
-  let db;
+  let db, auth;
   try {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
+    auth = firebase.auth();
   } catch(e) {
     console.warn('Firebase not configured — website form submissions will not auto-sync.');
   }
@@ -2858,6 +2962,8 @@
     }).join('') : '<div style="color:#aaa;font-size:0.82rem">No follow-ups scheduled.</div>';
   }
 
+  // ─── START: check who's signed in (Firebase Auth) ─────────────────
+  initAuthGate();
 
 </script>
 
