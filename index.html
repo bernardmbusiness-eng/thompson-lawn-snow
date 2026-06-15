@@ -187,7 +187,7 @@
     .btn-primary {
       background: var(--gold);
       color: var(--green-dark);
-      padding: 14px 36px;
+      padding: 15px 38px;
       font-family: 'Montserrat', sans-serif;
       font-size: 0.75rem;
       font-weight: 600;
@@ -195,19 +195,22 @@
       text-transform: uppercase;
       text-decoration: none;
       border: none;
+      border-radius: 50px;
       cursor: pointer;
-      transition: background 0.2s, transform 0.15s;
+      box-shadow: 0 6px 18px rgba(201, 168, 76, 0.28);
+      transition: background 0.25s, transform 0.2s, box-shadow 0.25s;
     }
 
     .btn-primary:hover {
       background: var(--gold-light);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 26px rgba(201, 168, 76, 0.38);
     }
 
     .btn-outline {
       background: transparent;
       color: var(--gold);
-      padding: 14px 36px;
+      padding: 15px 38px;
       font-family: 'Montserrat', sans-serif;
       font-size: 0.75rem;
       font-weight: 600;
@@ -215,6 +218,7 @@
       text-transform: uppercase;
       text-decoration: none;
       border: 1px solid var(--gold);
+      border-radius: 50px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s, transform 0.15s;
     }
@@ -222,7 +226,8 @@
     .btn-outline:hover {
       background: var(--gold);
       color: var(--green-dark);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 26px rgba(201, 168, 76, 0.25);
     }
 
     /* ─── SECTION SHARED ─── */
@@ -290,6 +295,14 @@
       background: var(--green-dark);
       padding: 2rem 1.5rem;
       text-align: center;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(8, 56, 32, 0.12);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+
+    .stat-box:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 32px rgba(8, 56, 32, 0.2);
     }
 
     .stat-num {
@@ -329,13 +342,16 @@
     .service-card {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 18px;
       padding: 2.5rem 2rem;
-      transition: border-color 0.2s, background 0.2s;
+      transition: border-color 0.25s, background 0.25s, transform 0.25s, box-shadow 0.25s;
     }
 
     .service-card:hover {
       border-color: var(--gold);
       background: rgba(201, 168, 76, 0.06);
+      transform: translateY(-4px);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
     }
 
     .service-icon {
@@ -381,10 +397,12 @@
       margin-bottom: 3rem;
       border: 2px solid var(--green-dark);
       width: fit-content;
+      border-radius: 50px;
+      overflow: hidden;
     }
 
     .tab-btn {
-      padding: 12px 36px;
+      padding: 13px 38px;
       font-family: 'Montserrat', sans-serif;
       font-size: 0.72rem;
       font-weight: 600;
@@ -394,7 +412,7 @@
       cursor: pointer;
       background: transparent;
       color: var(--green-dark);
-      transition: background 0.2s, color 0.2s;
+      transition: background 0.25s, color 0.25s;
     }
 
     .tab-btn.active {
@@ -412,8 +430,12 @@
 
     .pricing-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       font-size: 0.88rem;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
     }
 
     .pricing-table thead tr {
@@ -476,6 +498,13 @@
       border: 2px solid var(--green-dark);
       padding: 2.5rem 2rem;
       position: relative;
+      border-radius: 18px;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+
+    .snow-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.1);
     }
 
     .snow-card.featured {
@@ -493,7 +522,9 @@
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
-      padding: 3px 12px;
+      padding: 4px 14px;
+      border-radius: 50px;
+      box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
     }
 
     .snow-card-title {
@@ -583,7 +614,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 0.5rem;
     }
-    .ba-img-wrap { position: relative; overflow: hidden; }
+    .ba-img-wrap { position: relative; overflow: hidden; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
     .ba-img-wrap img {
       width: 100%;
       height: 220px;
@@ -732,14 +763,15 @@
     .form-group select,
     .form-group textarea {
       width: 100%;
-      padding: 12px 14px;
-      border: 1px solid #ccc;
+      padding: 13px 16px;
+      border: 1px solid #d9d2c4;
+      border-radius: 12px;
       background: white;
       font-family: 'Montserrat', sans-serif;
       font-size: 0.85rem;
       color: #333;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
       appearance: none;
     }
 
@@ -747,6 +779,7 @@
     .form-group select:focus,
     .form-group textarea:focus {
       border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(11, 74, 40, 0.08);
     }
 
     .form-group textarea {
@@ -758,13 +791,14 @@
     .social-icons { display:flex; gap:1rem; margin-top:1.5rem; }
     .social-icon {
       display:flex; align-items:center; justify-content:center;
-      width:38px; height:38px;
+      width:42px; height:42px;
       border:1px solid rgba(201,168,76,0.35);
+      border-radius:50%;
       color:var(--gold-muted);
-      transition:border-color 0.2s, color 0.2s;
+      transition:border-color 0.2s, color 0.2s, transform 0.2s;
       text-decoration:none;
     }
-    .social-icon:hover { border-color:var(--gold); color:var(--gold); }
+    .social-icon:hover { border-color:var(--gold); color:var(--gold); transform:translateY(-2px); }
     .social-icon svg { width:18px; height:18px; fill:currentColor; }
 
     footer {
@@ -886,10 +920,12 @@
       .pricing-table thead { display: none; }
       .pricing-table tbody tr {
         display: block;
-        border: 1px solid #ddd;
+        border: 1px solid #e6e0d4;
+        border-radius: 14px;
         margin-bottom: 1rem;
         padding: 1rem 1.25rem;
         background: white;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
       }
       .pricing-table tbody tr:hover { background: white; }
       .pricing-table td {
