@@ -596,6 +596,79 @@
       color: var(--gold-muted);
     }
 
+    /* ─── REVIEWS ─── */
+    #reviews {
+      background: var(--green-dark);
+      text-align: center;
+    }
+    #reviews .section-label { color: var(--gold-muted); }
+    .reviews-rating {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin: 0.5rem auto 0;
+      color: var(--text-light);
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+    .reviews-rating .big-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .review-stars { color: var(--gold); letter-spacing: 2px; font-size: 1rem; }
+    .review-card {
+      max-width: 620px;
+      margin: 2.5rem auto 0;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(201, 168, 76, 0.22);
+      border-radius: 20px;
+      padding: 2.5rem 2.25rem;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.18);
+    }
+    .review-quote {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: var(--text-light);
+      font-weight: 300;
+      font-style: italic;
+      margin: 1rem 0 1.5rem;
+    }
+    .review-author {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.85rem;
+    }
+    .review-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--green-dark);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 700;
+    }
+    .review-name { font-weight: 600; color: #fff; font-size: 0.95rem; text-align: left; }
+    .review-source {
+      font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--gold-muted); margin-top: 2px; text-align: left;
+    }
+    .reviews-cta {
+      display: inline-block;
+      margin-top: 2rem;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(201,168,76,0.4);
+      padding-bottom: 3px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .reviews-cta:hover { color: var(--gold-light); border-color: var(--gold); }
+
     /* ─── BEFORE / AFTER ─── */
     #results {
       padding: 5rem 2rem;
@@ -1205,6 +1278,32 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- REVIEWS -->
+  <section id="reviews">
+    <p class="section-label">What Our Customers Say</p>
+    <h2 class="section-title light">Reviews</h2>
+    <div class="section-divider" style="margin:0 auto 1rem"></div>
+    <div class="reviews-rating">
+      <span class="big-num">5.0</span>
+      <span class="review-stars">★★★★★</span>
+      <span>on Google</span>
+    </div>
+
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-quote">"Mitch has been looking after my yard since 2020. He is diligent and hard working. Highly recommend hiring him for landscaping needs in SW area of Calgary."</p>
+      <div class="review-author">
+        <div class="review-avatar">N</div>
+        <div>
+          <div class="review-name">Noor Gias</div>
+          <div class="review-source">Google Review</div>
+        </div>
+      </div>
+    </div>
+
+    <a class="reviews-cta" href="https://www.google.com/search?q=Thompson+Lawn+and+Snow+Maintenance+Calgary" target="_blank" rel="noopener">Leave us a review on Google</a>
   </section>
 
   <section id="contact">
