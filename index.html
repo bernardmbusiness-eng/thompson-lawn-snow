@@ -712,6 +712,50 @@
       .ba-grid { grid-template-columns: 1fr; }
     }
 
+    /* Work gallery (branded before/after graphics) */
+    .work-gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      max-width: 1120px;
+      margin: 3rem auto 0;
+    }
+    .work-item {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      transition: transform 0.25s, box-shadow 0.25s;
+      background: var(--green-dark);
+    }
+    .work-item img { width: 100%; height: auto; display: block; }
+    .work-item:hover { transform: translateY(-4px); box-shadow: 0 16px 38px rgba(0,0,0,0.18); }
+    .work-hint { display: none; }
+
+    @media (max-width: 768px) {
+      /* Clean swipeable carousel on mobile — one graphic at a time */
+      .work-gallery {
+        display: flex;
+        grid-template-columns: none;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 1rem;
+        padding: 0 1.25rem 0.5rem;
+        margin-top: 2rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .work-gallery::-webkit-scrollbar { display: none; }
+      .work-item { flex: 0 0 80%; scroll-snap-align: center; }
+      .work-hint {
+        display: block;
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--gold-muted);
+        margin-top: 1rem;
+      }
+    }
+
     .why-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1261,23 +1305,18 @@
     </div>
   </section>
 
-  <!-- CONTACT -->
+  <!-- OUR WORK -->
   <section id="results">
     <p class="section-label">Our Work</p>
     <h2 class="section-title">See The Difference</h2>
     <div class="section-divider" style="margin:0 auto"></div>
-    <div style="max-width:900px;margin:3rem auto 0">
-      <div class="ba-pair">
-        <div class="ba-img-wrap">
-          <img src="enhanced_after_1.jpg" alt="Lawn before mowing" loading="lazy">
-          <div class="ba-label before">Before</div>
-        </div>
-        <div class="ba-img-wrap">
-          <img src="enhanced_after_2.jpg" alt="Lawn after mowing" loading="lazy">
-          <div class="ba-label after">After</div>
-        </div>
-      </div>
+    <div class="work-gallery">
+      <div class="work-item"><img src="work-1.jpg" alt="Before and after front lawn mowing in Calgary" loading="lazy"></div>
+      <div class="work-item"><img src="work-2.jpg" alt="Before and after overgrown lawn cleanup in Calgary" loading="lazy"></div>
+      <div class="work-item"><img src="work-3.jpg" alt="Before and after front yard lawn care in Calgary" loading="lazy"></div>
+      <div class="work-item"><img src="work-4.jpg" alt="Before and after garden bed weeding in Calgary" loading="lazy"></div>
     </div>
+    <p class="work-hint">← Swipe to see more →</p>
   </section>
 
   <!-- REVIEWS -->
