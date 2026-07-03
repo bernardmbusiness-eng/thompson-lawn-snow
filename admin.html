@@ -416,6 +416,34 @@
 </head>
 <body>
 
+<!-- PRIVATE SITE PASSWORD GATE (shown before the staff login) -->
+<div id="site-gate" style="position:fixed;inset:0;z-index:99999;background:#072e1a;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:1.5rem;text-align:center;font-family:'Montserrat',sans-serif">
+  <div style="max-width:360px;width:100%">
+    <div style="font-family:'Playfair Display',serif;color:#c9a84c;font-size:1.9rem;letter-spacing:4px;text-transform:uppercase;line-height:1">Thompson</div>
+    <div style="color:#a8894a;font-size:0.58rem;letter-spacing:3px;text-transform:uppercase;margin:0.4rem 0 2rem">Admin Portal</div>
+    <p style="color:#e8dfc8;font-size:0.85rem;line-height:1.6;margin-bottom:1.25rem">This portal is private. Please enter the access password.</p>
+    <input id="site-gate-pw" type="password" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')siteGateCheck()" style="width:100%;padding:13px 16px;border:1px solid #a8894a;border-radius:12px;background:rgba(255,255,255,0.06);color:#fff;font-size:0.9rem;outline:none;text-align:center" />
+    <button onclick="siteGateCheck()" style="width:100%;margin-top:0.85rem;padding:14px;border:none;border-radius:50px;background:#c9a84c;color:#072e1a;font-weight:600;letter-spacing:2px;text-transform:uppercase;font-size:0.75rem;cursor:pointer">Enter</button>
+    <div id="site-gate-err" style="color:#e8a0a0;font-size:0.75rem;margin-top:0.85rem;display:none">Incorrect password.</div>
+  </div>
+</div>
+<script>
+  (function () {
+    var SITE_PASSWORD = 'ThompsonYYC2026';
+    var KEY = 'tls_site_access';
+    function reveal() { var g = document.getElementById('site-gate'); if (g) g.style.display = 'none'; document.documentElement.style.overflow = ''; document.body.style.overflow = ''; }
+    window.siteGateCheck = function () {
+      var v = document.getElementById('site-gate-pw').value;
+      if (v === SITE_PASSWORD) { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} reveal(); }
+      else { document.getElementById('site-gate-err').style.display = 'block'; document.getElementById('site-gate-pw').value = ''; }
+    };
+    try {
+      if (sessionStorage.getItem(KEY) === '1') { reveal(); }
+      else { document.documentElement.style.overflow = 'hidden'; }
+    } catch (e) { document.documentElement.style.overflow = 'hidden'; }
+  })();
+</script>
+
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
