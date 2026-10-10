@@ -420,13 +420,12 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Thompson</div>
-    <div class="login-sub">Staff Sign In</div>
-    <label class="login-label">Email</label>
-    <input class="login-input" type="email" id="email-input" autocomplete="username" placeholder="you@thompsonlawnsnow.ca" onkeydown="if(event.key==='Enter') document.getElementById('pw-input').focus()" />
-    <label class="login-label" style="margin-top:0.75rem">Password</label>
-    <input class="login-input" type="password" id="pw-input" autocomplete="current-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter') doLogin()" />
+    <div class="login-sub">Admin Sign In</div>
+    <input type="text" id="email-input" autocomplete="username" value="info@thompsonlawnsnow.ca" style="display:none" readonly />
+    <label class="login-label">Password</label>
+    <input class="login-input" type="password" id="pw-input" autocomplete="current-password" placeholder="Enter password" onkeydown="if(event.key==='Enter') doLogin()" />
     <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
-    <div class="login-error" id="login-error">Incorrect email or password.</div>
+    <div class="login-error" id="login-error">Incorrect password.</div>
     <div style="margin-top:0.85rem;text-align:center">
       <a href="#" onclick="doResetPassword();return false;" style="font-size:0.72rem;color:var(--gold-muted);text-decoration:none">Forgot password?</a>
     </div>
@@ -480,10 +479,6 @@
       <div class="nav-item" onclick="openPropertyMapper()">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></span>
         Yard Mapper
-      </div>
-      <div class="nav-item" data-role="admin" onclick="showPage('team', this)">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-        Team &amp; Logins
       </div>
     </nav>
     <div class="sidebar-bottom">
@@ -834,10 +829,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
       Mapper
     </button>
-    <button class="mobile-nav-item" data-role="admin" id="mnav-team" onclick="showPage('team',this);setMobileNav(this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
-      Team
-    </button>
   </nav>
 
 </div><!-- /app -->
@@ -1174,12 +1165,12 @@
 
   // ─── AUTH (Firebase) ──────────────────────────────────────────────
   function doLogin() {
-    const email = (document.getElementById('email-input').value || '').trim();
+    const email = OWNER_EMAILS[0]; // single shared login — password only
     const pw = document.getElementById('pw-input').value;
     const errEl = document.getElementById('login-error');
     const btn = document.getElementById('login-btn');
     errEl.style.display = 'none';
-    if (!email || !pw) { errEl.textContent = 'Enter your email and password.'; errEl.style.display = 'block'; return; }
+    if (!pw) { errEl.textContent = 'Enter the password.'; errEl.style.display = 'block'; return; }
     if (!auth) { errEl.textContent = 'Login service unavailable. Check your connection.'; errEl.style.display = 'block'; return; }
     btn.textContent = 'Signing in…'; btn.disabled = true;
     auth.signInWithEmailAndPassword(email, pw)
@@ -1188,7 +1179,7 @@
         console.warn('Login error:', err.code);
         errEl.textContent = (err.code === 'auth/too-many-requests')
           ? 'Too many attempts. Try again in a few minutes.'
-          : 'Incorrect email or password.';
+          : 'Incorrect password.';
         errEl.style.display = 'block';
         document.getElementById('pw-input').value = '';
       })
@@ -1201,9 +1192,8 @@
   }
 
   function doResetPassword() {
-    const email = (document.getElementById('email-input').value || '').trim();
+    const email = OWNER_EMAILS[0];
     const errEl = document.getElementById('login-error');
-    if (!email) { errEl.textContent = 'Enter your email first, then tap “Forgot password?”.'; errEl.style.display = 'block'; return; }
     if (!auth) return;
     auth.sendPasswordResetEmail(email)
       .then(() => { errEl.style.color = 'var(--green-dark)'; errEl.textContent = 'Password reset email sent to ' + email; errEl.style.display = 'block'; })
