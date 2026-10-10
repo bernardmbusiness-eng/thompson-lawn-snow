@@ -1210,16 +1210,7 @@
       if (db) { try { await db.collection('users').doc(e).set({ email: e, name: e.split('@')[0], role: 'owner', active: true }, { merge: true }); } catch (err) {} }
       return 'admin';
     }
-    if (!db) return 'staff';
-    let doc = null;
-    try { doc = await db.collection('users').doc(e).get(); } catch (err) { console.warn('role read failed', err); }
-
-    if (doc && doc.exists) {
-      const u = doc.data();
-      if (u.active === false) return null;                 // revoked
-      return u.role === 'admin' ? 'admin' : 'staff';
-    }
-    // No record = never provisioned or removed → block.
+    // Staff accounts are retired — only the shared owner login is allowed.
     return null;
   }
 
