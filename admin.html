@@ -429,11 +429,11 @@
 </div>
 <script>
   (function () {
-    var SITE_PASSWORD = '?KingZain101?';
+    var SITE_PASSWORD = 'thompson2026';
     var KEY = 'tls_site_access';
     function reveal() { var g = document.getElementById('site-gate'); if (g) g.style.display = 'none'; document.documentElement.style.overflow = ''; document.body.style.overflow = ''; }
     window.siteGateCheck = function () {
-      var v = document.getElementById('site-gate-pw').value;
+      var v = document.getElementById('site-gate-pw').value.trim().toLowerCase();
       if (v === SITE_PASSWORD) { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} reveal(); }
       else { document.getElementById('site-gate-err').style.display = 'block'; document.getElementById('site-gate-pw').value = ''; }
     };
